@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.SkipNext
-import androidx.compose.material.icons.automirrored.filled.SkipPrevious
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -85,7 +85,7 @@ fun PlayerScreen(
             horizontalArrangement = Arrangement.spacedBy(32.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            PlayerButton(icon = Icons.AutoMirrored.Filled.SkipPrevious) { /* rewind */ }
+            PlayerButton(icon = Icons.Filled.SkipPrevious) { /* rewind */ }
             IconButton(
                 onClick = { viewModel.togglePlayPause() },
                 modifier = Modifier.size(72.dp)
@@ -96,7 +96,7 @@ fun PlayerScreen(
                     modifier = Modifier.size(56.dp)
                 )
             }
-            PlayerButton(icon = Icons.AutoMirrored.Filled.SkipNext) { /* forward */ }
+            PlayerButton(icon = Icons.Filled.SkipNext) { /* forward */ }
         }
     }
 }
