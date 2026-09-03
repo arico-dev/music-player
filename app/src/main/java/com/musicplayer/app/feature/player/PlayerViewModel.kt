@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.core.util.AlbumArtColorExtractor
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -16,7 +17,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val playbackController: PlaybackController
+    private val playbackController: PlaybackController,
+    private val colorExtractor: AlbumArtColorExtractor
 ) : ViewModel() {
 
     val currentSong: StateFlow<Song?> = playbackController.currentSong
@@ -43,7 +45,15 @@ class PlayerViewModel @Inject constructor(
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode
 
+    private val _dominantColor = MutableStateFlow<Int?>(null)
+    val dominantColor: StateFlow<Int?> = _dominantColor
+
     init {
+        viewModelScope.launch {
+            playbackController.currentSong.collect { song ->
+                _dominantColor.value = colorExtractor.extractFromUri(song?.albumArtUri)
+            }
+        }
         viewModelScope.launch {
             while (true) {
                 _queue.value = playbackController.currentMediaItems()
