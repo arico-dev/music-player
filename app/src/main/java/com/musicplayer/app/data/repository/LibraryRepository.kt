@@ -37,7 +37,7 @@ class LibraryRepository @Inject constructor(
         val artists = songs
             .groupBy { it.artist }
             .map { (name, group) ->
-                ArtistEntity(id = group.first().artistId ?: name.hashCode().toLong(), name = name)
+                ArtistEntity(id = group.first().artist.hashCode().toLong(), name = name)
             }
 
         songDao.upsertAll(songs.map { it.toEntity() })
@@ -57,7 +57,7 @@ class LibraryRepository @Inject constructor(
         id = id,
         title = title,
         artist = artist,
-        artistId = artistId ?: artist.hashCode().toLong(),
+        artistId = artist.hashCode().toLong(),
         album = album,
         albumId = albumId ?: 0L,
         durationMs = durationMs,
