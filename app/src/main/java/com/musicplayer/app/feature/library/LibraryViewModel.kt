@@ -32,7 +32,11 @@ class LibraryViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun play(song: Song) {
-        playbackController.play(song)
+        val playlist = songs.value
+        val index = playlist.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
+        if (playlist.isNotEmpty()) {
+            playbackController.playSongs(playlist, index)
+        }
     }
 
     fun onPermissionGranted() {

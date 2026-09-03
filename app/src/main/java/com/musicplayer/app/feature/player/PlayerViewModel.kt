@@ -2,6 +2,7 @@ package com.musicplayer.app.feature.player
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.Player
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,20 +25,32 @@ class PlayerViewModel @Inject constructor(
     val isPlaying: StateFlow<Boolean> = playbackController.isPlaying
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
+    val currentIndex: StateFlow<Int> = playbackController.currentIndex
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0)
+
+    private val _queue = MutableStateFlow<List<Song>>(emptyList())
+    val queue: StateFlow<List<Song>> = _queue
+
     private val _position = MutableStateFlow(0L)
     val position: StateFlow<Long> = _position
 
     private val _duration = MutableStateFlow(0L)
     val duration: StateFlow<Long> = _duration
 
+    private val _isShuffled = MutableStateFlow(false)
+    val isShuffled: StateFlow<Boolean> = _isShuffled
+
+    private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
+    val repeatMode: StateFlow<Int> = _repeatMode
+
     init {
         viewModelScope.launch {
             while (true) {
-                val song = playbackController.currentSong.value
-                if (song != null) {
-                    _duration.value = song.durationMs
-                    _position.value = playbackController.currentPosition()
-                }
+                _queue.value = playbackController.currentMediaItems()
+                _position.value = playbackController.currentPosition()
+                _duration.value = playbackController.duration()
+                _isShuffled.value = playbackController.isShuffled
+                _repeatMode.value = playbackController.repeatMode
                 delay(500)
             }
         }
@@ -45,7 +58,17 @@ class PlayerViewModel @Inject constructor(
 
     fun togglePlayPause() = playbackController.togglePlayPause()
 
+    fun skipToNext() = playbackController.skipToNext()
+
+    fun skipToPrevious() = playbackController.skipToPrevious()
+
+    fun skipToIndex(index: Int) = playbackController.skipToIndex(index)
+
     fun seekTo(positionMs: Long) = playbackController.seekTo(positionMs)
+
+    fun toggleShuffle() = playbackController.setShuffleEnabled(!playbackController.isShuffled)
+
+    fun cycleRepeatMode() = playbackController.toggleRepeatMode()
 
     override fun onCleared() {
         playbackController.release()

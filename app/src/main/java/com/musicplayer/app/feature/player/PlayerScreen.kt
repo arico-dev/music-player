@@ -2,6 +2,7 @@ package com.musicplayer.app.feature.player
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,12 +13,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -25,15 +36,20 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
+import com.musicplayer.app.core.model.Song
 
 @Composable
 fun PlayerScreen(
@@ -43,81 +59,257 @@ fun PlayerScreen(
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
     val position by viewModel.position.collectAsStateWithLifecycle()
     val duration by viewModel.duration.collectAsStateWithLifecycle()
+    val queue by viewModel.queue.collectAsStateWithLifecycle()
+    val currentIndex by viewModel.currentIndex.collectAsStateWithLifecycle()
+    val isShuffled by viewModel.isShuffled.collectAsStateWithLifecycle()
+    val repeatMode by viewModel.repeatMode.collectAsStateWithLifecycle()
 
+    var showQueue by remember { mutableStateOf(false) }
+
+    if (showQueue) {
+        QueueSheet(
+            queue = queue,
+            currentIndex = currentIndex,
+            onClose = { showQueue = false },
+            onSelect = viewModel::skipToIndex
+        )
+    } else {
+        PlayerContent(
+            currentSong = currentSong,
+            isPlaying = isPlaying,
+            position = position,
+            duration = duration,
+            isShuffled = isShuffled,
+            repeatMode = repeatMode,
+            queueSize = queue.size,
+            onToggleShuffle = viewModel::toggleShuffle,
+            onCycleRepeat = viewModel::cycleRepeatMode,
+            onTogglePlayPause = viewModel::togglePlayPause,
+            onPrevious = viewModel::skipToPrevious,
+            onNext = viewModel::skipToNext,
+            onSeek = viewModel::seekTo,
+            onOpenQueue = { showQueue = true }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerContent(
+    currentSong: Song?,
+    isPlaying: Boolean,
+    position: Long,
+    duration: Long,
+    isShuffled: Boolean,
+    repeatMode: Int,
+    queueSize: Int,
+    onToggleShuffle: () -> Unit,
+    onCycleRepeat: () -> Unit,
+    onTogglePlayPause: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onOpenQueue: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        AlbumArt(song = currentSong?.albumArtUri?.toString())
+        AlbumArt(artUri = currentSong?.albumArtUri?.toString())
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
             text = currentSong?.title ?: "Nada sonando",
-            style = MaterialTheme.typography.headlineSmall
+            style = MaterialTheme.typography.headlineSmall,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
         Text(
             text = currentSong?.artist ?: "",
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Progress + seek
         if (duration > 0) {
             Slider(
                 value = position.toFloat().coerceIn(0f, duration.toFloat()),
-                onValueChange = { viewModel.seekTo(it.toLong()) },
+                onValueChange = { onSeek(it.toLong()) },
                 valueRange = 0f..duration.toFloat()
             )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = formatTime(position),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = formatTime(duration),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Shuffle / previous / play-pause / next / repeat
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onToggleShuffle) {
+                Icon(
+                    imageVector = Icons.Filled.Shuffle,
+                    contentDescription = "Aleatorio",
+                    tint = if (isShuffled) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.SkipPrevious,
+                    contentDescription = "Anterior",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            IconButton(
+                onClick = onTogglePlayPause,
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(36.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(48.dp)
+                )
+            }
+            IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.SkipNext,
+                    contentDescription = "Siguiente",
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+            IconButton(onClick = onCycleRepeat) {
+                val icon: ImageVector = when (repeatMode) {
+                    2 -> Icons.Filled.RepeatOne   // REPEAT_MODE_ONE
+                    1 -> Icons.Filled.Repeat      // REPEAT_MODE_ALL
+                    else -> Icons.Filled.Repeat
+                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = "Repetir",
+                    tint = if (repeatMode != 0) MaterialTheme.colorScheme.primary
+                           else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Queue toggle
+        FilterChip(
+            selected = false,
+            onClick = onOpenQueue,
+            label = { Text(if (queueSize > 0) "Cola ($queueSize)" else "Cola") },
+            leadingIcon = {
+                Icon(imageVector = Icons.Filled.KeyboardArrowUp, contentDescription = null)
+            }
+        )
+    }
+}
+
+@Composable
+private fun QueueSheet(
+    queue: List<Song>,
+    currentIndex: Int,
+    onClose: () -> Unit,
+    onSelect: (Int) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.KeyboardArrowDown,
+                contentDescription = "Cerrar cola",
+                modifier = Modifier
+                    .clickable(onClick = onClose)
+                    .size(32.dp)
+            )
             Text(
-                text = formatTime(position),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "Cola",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(start = 16.dp)
             )
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(32.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            PlayerButton(icon = Icons.Filled.SkipPrevious) { /* rewind */ }
-            IconButton(
-                onClick = { viewModel.togglePlayPause() },
-                modifier = Modifier.size(72.dp)
-            ) {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                    modifier = Modifier.size(56.dp)
-                )
+        LazyColumn {
+            itemsIndexed(queue, key = { _, song -> song.id }) { index, song ->
+                val isCurrent = index == currentIndex
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelect(index) }
+                        .background(
+                            if (isCurrent) MaterialTheme.colorScheme.surfaceVariant
+                            else MaterialTheme.colorScheme.background
+                        )
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.MusicNote,
+                        contentDescription = null,
+                        tint = if (isCurrent) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Column {
+                        Text(
+                            text = song.title,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isCurrent) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = song.artist,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
-            PlayerButton(icon = Icons.Filled.SkipNext) { /* forward */ }
         }
     }
 }
 
 @Composable
-private fun PlayerButton(
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    IconButton(onClick = onClick) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            modifier = Modifier.size(40.dp)
-        )
-    }
-}
-
-@Composable
-private fun AlbumArt(song: String?) {
-    val artUri = song
+private fun AlbumArt(artUri: String?) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
