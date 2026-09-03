@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Music Player</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Inicio</string>
+    <string name="nav_library">Biblioteca</string>
+    <string name="nav_search">Buscar</string>
+    <string name="nav_settings">Ajustes</string>
+
+    <!-- Library tabs -->
+    <string name="tab_songs">Canciones</string>
+    <string name="tab_albums">Álbumes</string>
+    <string name="tab_artists">Artistas</string>
+    <string name="tab_genres">Géneros</string>
+    <string name="tab_folders">Carpetas</string>
+
+    <!-- Player -->
+    <string name="now_playing">En reproducción</string>
+    <string name="no_track_selected">Ninguna canción seleccionada</string>
+    <string name="shuffle">Aleatorio</string>
+    <string name="repeat">Repetir</string>
+    <string name="previous">Anterior</string>
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="next">Siguiente</string>
+    <string name="queue">Cola</string>
+    <string name="lyrics">Letras</string>
+
+    <!-- Permissions -->
+    <string name="permission_audio_title">Acceso a tu música</string>
+    <string name="permission_audio_message">Necesitamos permiso para leer tus archivos de audio y mostrarlos en tu biblioteca.</string>
+    <string name="permission_grant">Permitir</string>
+    <string name="permission_deny">Ahora no</string>
+
+    <!-- Empty states -->
+    <string name="library_empty">Tu biblioteca está vacía.\nAgrega música a tu dispositivo y dale a actualizar.</string>
+    <string name="search_empty">Sin resultados</string>
+    <string name="search_hint">Buscar canciones, álbumes, artistas…</string>
+    <string name="refresh_library">Actualizar biblioteca</string>
+</resources>
