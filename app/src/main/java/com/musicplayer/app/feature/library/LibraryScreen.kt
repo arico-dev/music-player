@@ -44,10 +44,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,7 +68,7 @@ import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
 
-private enum class LibraryTab(val labelRes: Int) {
+enum class LibraryTab(val labelRes: Int) {
     SONGS(R.string.tab_songs),
     ALBUMS(R.string.tab_albums),
     ARTISTS(R.string.tab_artists),
@@ -95,6 +93,7 @@ fun LibraryScreen(
     val genres by viewModel.genres.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
+    val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -130,6 +129,8 @@ fun LibraryScreen(
                 artists = artists,
                 genres = genres,
                 folders = folders,
+                selectedTab = selectedTab,
+                onSelectTab = viewModel::selectTab,
                 onSongClick = { song ->
                     viewModel.play(song)
                     onSongClick(song)
@@ -158,6 +159,8 @@ private fun LibraryTabs(
     artists: List<Artist>,
     genres: List<Genre>,
     folders: List<Folder>,
+    selectedTab: LibraryTab,
+    onSelectTab: (LibraryTab) -> Unit,
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
     onAlbumClick: (Album) -> Unit,
@@ -166,22 +169,21 @@ private fun LibraryTabs(
     onFolderClick: (Folder) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = LibraryTab.entries
 
     Column(modifier = modifier) {
-        PrimaryTabRow(selectedTabIndex = selectedTab) {
-            tabs.forEachIndexed { index, tab ->
+        PrimaryTabRow(selectedTabIndex = selectedTab.ordinal) {
+            tabs.forEach { tab ->
                 Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
+                    selected = selectedTab == tab,
+                    onClick = { onSelectTab(tab) },
                     text = { Text(stringResource(tab.labelRes)) }
                 )
             }
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            when (tabs[selectedTab]) {
+            when (selectedTab) {
                 LibraryTab.SONGS -> SongList(
                     songs = songs,
                     onSongClick = onSongClick,

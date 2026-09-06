@@ -36,6 +36,13 @@ class LibraryViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
 
+    private val _selectedTab = MutableStateFlow(LibraryTab.SONGS)
+    val selectedTab: StateFlow<LibraryTab> = _selectedTab
+
+    fun selectTab(tab: LibraryTab) {
+        _selectedTab.value = tab
+    }
+
     val songs: StateFlow<List<Song>> = repository.songs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
