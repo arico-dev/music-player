@@ -17,15 +17,20 @@ class LyricsRepository @Inject constructor(
     private val api: LrcLibApi
 ) {
 
-    suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResult = runCatching {
-        val sanitized = { raw: String -> raw.replace("[^A-Za-z0-9 ]".toRegex(), "").trim() }
+    private val clean: (String) -> String = { raw ->
+    raw.replace(Regex("""[^\p{L}\p{N} ]"""), " ")
+        .replace(Regex("""\s+"""), " ")
+        .trim()
+}
+
+suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResult = runCatching {
         val response = api.getLyrics(
-            artistName = sanitized(artist).takeIf { it.isNotEmpty() },
-            trackName = sanitized(title),
-            albumName = sanitized(album ?: "")
+            artistName = clean(artist).takeIf { it.isNotEmpty() },
+            trackName = clean(title),
+            albumName = clean(album ?: "").takeIf { it.isNotEmpty() }
         )
         val record = if (response.isSuccessful) response.body() else null
-        record ?: api.search(sanitized(title)).pickBest(album)
+        record ?: api.search(clean(title), page = 1).pickBest(album)
     }.fold(
         onSuccess = { record -> record.toResult() },
         onFailure = { LyricsResult.NotFound }
@@ -33,9 +38,9 @@ class LyricsRepository @Inject constructor(
 
     private fun List<LrcLibLyrics>.pickBest(album: String?): LrcLibLyrics? {
         if (isEmpty()) return null
-        val albumKey = album?.trim()?.lowercase()
+        val albumKey = album?.let { clean(it).lowercase() }
         albumKey?.let { key ->
-            firstOrNull { it.albumName?.trim()?.lowercase() == key }?.let { return it }
+            firstOrNull { clean(it.albumName ?: "").lowercase() == key }?.let { return it }
         }
         firstOrNull { it.albumName.isNullOrBlank() && !it.syncedLyrics.isNullOrBlank() }?.let { return it }
         firstOrNull { !it.syncedLyrics.isNullOrBlank() }?.let { return it }
