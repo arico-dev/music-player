@@ -4,21 +4,26 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.core.model.SongMetadata
 import com.musicplayer.app.core.util.AlbumArtColorExtractor
+import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val playbackController: PlaybackController,
-    private val colorExtractor: AlbumArtColorExtractor
+    private val colorExtractor: AlbumArtColorExtractor,
+    private val metadataReader: MetadataReader
 ) : ViewModel() {
 
     val currentSong: StateFlow<Song?> = playbackController.currentSong
@@ -47,6 +52,9 @@ class PlayerViewModel @Inject constructor(
 
     private val _dominantColor = MutableStateFlow<Int?>(null)
     val dominantColor: StateFlow<Int?> = _dominantColor
+
+    private val _songInfo = MutableStateFlow<SongMetadata?>(null)
+    val songInfo: StateFlow<SongMetadata?> = _songInfo
 
     init {
         viewModelScope.launch {
@@ -79,4 +87,14 @@ class PlayerViewModel @Inject constructor(
     fun toggleShuffle() = playbackController.setShuffleEnabled(!playbackController.isShuffled)
 
     fun cycleRepeatMode() = playbackController.toggleRepeatMode()
+
+    fun requestSongInfo(song: Song) {
+        viewModelScope.launch {
+            _songInfo.value = withContext(Dispatchers.IO) { metadataReader.read(song) }
+        }
+    }
+
+    fun dismissSongInfo() {
+        _songInfo.value = null
+    }
 }

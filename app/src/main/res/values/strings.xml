@@ -27,6 +27,21 @@
     <string name="queue">Cola</string>
     <string name="lyrics">Letras</string>
 
+    <!-- Song info -->
+    <string name="song_info_title">Información de la canción</string>
+    <string name="song_info_title_label">Título</string>
+    <string name="song_info_artist_label">Artista</string>
+    <string name="song_info_album_label">Álbum</string>
+    <string name="song_info_genre_label">Género</string>
+    <string name="song_info_track_label">Pista</string>
+    <string name="song_info_duration_label">Duración</string>
+    <string name="song_info_size_label">Tamaño</string>
+    <string name="song_info_type_label">Tipo</string>
+    <string name="song_info_codec_label">Códec</string>
+    <string name="song_info_bitrate_label">Bitrate</string>
+    <string name="song_info_sample_rate_label">Frecuencia</string>
+    <string name="song_info_path_label">Ruta</string>
+
     <!-- Permissions -->
     <string name="permission_audio_title">Acceso a tu música</string>
     <string name="permission_audio_message">Necesitamos permiso para leer tus archivos de audio y mostrarlos en tu biblioteca.</string>

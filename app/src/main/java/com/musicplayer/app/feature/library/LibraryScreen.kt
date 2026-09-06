@@ -27,11 +27,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
@@ -40,6 +44,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,6 +67,7 @@ import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.SongInfoSheet
 
 private enum class LibraryTab(val labelRes: Int) {
     SONGS(R.string.tab_songs),
@@ -86,6 +93,7 @@ fun LibraryScreen(
     val artists by viewModel.artists.collectAsStateWithLifecycle()
     val genres by viewModel.genres.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
+    val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -125,11 +133,18 @@ fun LibraryScreen(
                     viewModel.play(song)
                     onSongClick(song)
                 },
+                onSongInfo = viewModel::requestSongInfo,
                 onAlbumClick = onAlbumClick,
                 onArtistClick = onArtistClick,
                 onGenreClick = onGenreClick,
                 onFolderClick = onFolderClick,
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+        songInfo?.let { song ->
+            SongInfoSheet(
+                song = song,
+                onDismiss = viewModel::dismissSongInfo
             )
         }
     }
@@ -143,6 +158,7 @@ private fun LibraryTabs(
     genres: List<Genre>,
     folders: List<Folder>,
     onSongClick: (Song) -> Unit,
+    onSongInfo: (Song) -> Unit,
     onAlbumClick: (Album) -> Unit,
     onArtistClick: (Artist) -> Unit,
     onGenreClick: (Genre) -> Unit,
@@ -168,6 +184,7 @@ private fun LibraryTabs(
                 LibraryTab.SONGS -> SongList(
                     songs = songs,
                     onSongClick = onSongClick,
+                    onSongInfo = onSongInfo,
                     modifier = Modifier.fillMaxSize()
                 )
                 LibraryTab.ALBUMS -> AlbumGrid(
@@ -227,6 +244,7 @@ private fun PermissionRequest(
 private fun SongList(
     songs: List<Song>,
     onSongClick: (Song) -> Unit,
+    onSongInfo: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (songs.isEmpty()) {
@@ -235,7 +253,11 @@ private fun SongList(
     }
     LazyColumn(modifier = modifier) {
         items(songs, key = { it.id }) { song ->
-            SongRow(song = song, onClick = { onSongClick(song) })
+            SongRow(
+                song = song,
+                onClick = { onSongClick(song) },
+                onInfoClick = { onSongInfo(song) }
+            )
         }
     }
 }
@@ -243,13 +265,15 @@ private fun SongList(
 @Composable
 private fun SongRow(
     song: Song,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onInfoClick: () -> Unit
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -291,6 +315,27 @@ private fun SongRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        Box {
+            IconButton(onClick = { menuExpanded = true }) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            DropdownMenu(
+                expanded = menuExpanded,
+                onDismissRequest = { menuExpanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.song_info_title)) },
+                    onClick = {
+                        menuExpanded = false
+                        onInfoClick()
+                    }
+                )
+            }
         }
     }
 }

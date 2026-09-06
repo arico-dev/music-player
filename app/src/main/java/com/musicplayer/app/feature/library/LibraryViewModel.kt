@@ -7,14 +7,18 @@ import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.core.model.SongMetadata
+import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.data.repository.LibraryRepository
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class LibraryUiState(
@@ -25,7 +29,8 @@ data class LibraryUiState(
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repository: LibraryRepository,
-    private val playbackController: PlaybackController
+    private val playbackController: PlaybackController,
+    private val metadataReader: MetadataReader
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LibraryUiState())
@@ -46,6 +51,9 @@ class LibraryViewModel @Inject constructor(
     val folders: StateFlow<List<Folder>> = repository.folders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val _songInfo = MutableStateFlow<SongMetadata?>(null)
+    val songInfo: StateFlow<SongMetadata?> = _songInfo
+
     fun play(song: Song) {
         val playlist = songs.value
         val index = playlist.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
@@ -65,5 +73,15 @@ class LibraryViewModel @Inject constructor(
             repository.refresh()
             _uiState.value = _uiState.value.copy(isLoading = false)
         }
+    }
+
+    fun requestSongInfo(song: Song) {
+        viewModelScope.launch {
+            _songInfo.value = withContext(Dispatchers.IO) { metadataReader.read(song) }
+        }
+    }
+
+    fun dismissSongInfo() {
+        _songInfo.value = null
     }
 }
