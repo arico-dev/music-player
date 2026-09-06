@@ -2,6 +2,10 @@ package com.musicplayer.app.feature.library
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.musicplayer.app.core.model.Album
+import com.musicplayer.app.core.model.Artist
+import com.musicplayer.app.core.model.Folder
+import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.repository.LibraryRepository
 import com.musicplayer.app.player.PlaybackController
@@ -14,7 +18,6 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class LibraryUiState(
-    val songs: List<Song> = emptyList(),
     val isLoading: Boolean = true,
     val hasPermission: Boolean = false
 )
@@ -29,6 +32,18 @@ class LibraryViewModel @Inject constructor(
     val uiState: StateFlow<LibraryUiState> = _uiState
 
     val songs: StateFlow<List<Song>> = repository.songs
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val albums: StateFlow<List<Album>> = repository.albums
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val artists: StateFlow<List<Artist>> = repository.artists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val genres: StateFlow<List<Genre>> = repository.genres
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val folders: StateFlow<List<Folder>> = repository.folders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun play(song: Song) {
@@ -48,10 +63,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             repository.refresh()
-            val songList = repository.songs
-            _uiState.value = _uiState.value.copy(
-                isLoading = false
-            )
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 }
