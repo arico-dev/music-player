@@ -25,6 +25,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,6 +48,7 @@ interface MiniPlayerActions {
 @Composable
 fun MiniPlayer(
     playbackController: PlaybackController,
+    dominantColor: Int? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -56,6 +60,7 @@ fun MiniPlayer(
     MiniPlayerContent(
         song = currentSong!!,
         isPlaying = isPlaying,
+        dominantColor = dominantColor,
         onTogglePlayPause = playbackController::togglePlayPause,
         onNext = playbackController::skipToNext,
         onClick = onClick,
@@ -67,17 +72,36 @@ fun MiniPlayer(
 private fun MiniPlayerContent(
     song: Song,
     isPlaying: Boolean,
+    dominantColor: Int?,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val baseColor = dominantColor?.let { Color(it) }
+    val onBase = baseColor?.let { if (it.luminance() > 0.5f) Color.Black else Color.White }
+    val titleColor = onBase ?: MaterialTheme.colorScheme.onSurface
+    val artistColor = onBase?.copy(alpha = 0.7f) ?: MaterialTheme.colorScheme.onSurfaceVariant
+    val playColor = onBase ?: MaterialTheme.colorScheme.primary
+    val nextColor = onBase?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(
+                if (baseColor != null) {
+                    Brush.horizontalGradient(listOf(baseColor, baseColor.copy(alpha = 0.7f)))
+                } else {
+                    Brush.horizontalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surfaceVariant,
+                            MaterialTheme.colorScheme.surfaceVariant
+                        )
+                    )
+                }
+            )
             .clickable(onClick = onClick)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -111,13 +135,14 @@ private fun MiniPlayerContent(
             Text(
                 text = song.title,
                 style = MaterialTheme.typography.titleSmall,
+                color = titleColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
                 text = song.artist,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = artistColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -126,14 +151,14 @@ private fun MiniPlayerContent(
             Icon(
                 imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                 contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                tint = MaterialTheme.colorScheme.primary
+                tint = playColor
             )
         }
         IconButton(onClick = onNext) {
             Icon(
                 imageVector = Icons.Filled.SkipNext,
                 contentDescription = "Siguiente",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = nextColor
             )
         }
     }

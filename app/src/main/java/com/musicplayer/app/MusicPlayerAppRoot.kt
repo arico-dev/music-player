@@ -81,6 +81,7 @@ fun MusicPlayerAppRoot() {
     val navController = rememberNavController()
     val rootViewModel: RootViewModel = hiltViewModel()
     val currentSong by rootViewModel.playbackController.currentSong.collectAsStateWithLifecycle()
+    val dominantColor by rootViewModel.dominantColor.collectAsStateWithLifecycle()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -93,6 +94,7 @@ fun MusicPlayerAppRoot() {
                     if (currentSong != null) {
                         MiniPlayer(
                             playbackController = rootViewModel.playbackController,
+                            dominantColor = dominantColor,
                             onClick = { navController.navigate(Routes.PLAYER) }
                         )
                     }
