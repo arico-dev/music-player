@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -159,15 +160,17 @@ private fun PlayerContent(
 ) {
     val baseColor = dominantColor?.let { Color(it) } ?: MaterialTheme.colorScheme.surface
     val onBase = if (dominantColor != null) Color.White else MaterialTheme.colorScheme.onSurface
+    val backgroundColors = if (dominantColor != null) {
+        val tint = baseColor.darken(0.45f)
+        listOf(tint, tint.copy(alpha = 0.55f), Color.Black)
+    } else {
+        listOf(baseColor, baseColor.copy(alpha = 0.55f), Color.Black)
+    }
 
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(baseColor, baseColor.copy(alpha = 0.55f), Color.Black)
-                )
-            )
+            .background(Brush.verticalGradient(colors = backgroundColors))
     ) {
         if (maxWidth > maxHeight) {
             // Horizontal: carátula a la izquierda, controles a la derecha
@@ -633,8 +636,7 @@ private fun LyricsSheet(
     onRetry: () -> Unit
 ) {
     val baseColor = dominantColor?.let { Color(it) }
-    val onBase = baseColor?.let { if (it.luminance() > 0.5f) Color.Black else Color.White }
-    val textColor = onBase ?: MaterialTheme.colorScheme.onSurface
+    val foreground = if (baseColor != null) Color.White else MaterialTheme.colorScheme.onSurface
 
     Column(
         modifier = Modifier
@@ -642,13 +644,16 @@ private fun LyricsSheet(
             .background(
                 if (baseColor != null) {
                     Brush.verticalGradient(
-                        listOf(baseColor, baseColor.copy(alpha = 0.6f))
+                        listOf(
+                            baseColor.darken(0.5f),
+                            baseColor.darken(0.72f)
+                        )
                     )
                 } else {
                     Brush.verticalGradient(
                         listOf(
                             MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.background
+                            MaterialTheme.colorScheme.surfaceVariant
                         )
                     )
                 }
@@ -664,13 +669,13 @@ private fun LyricsSheet(
                 Icon(
                     imageVector = Icons.Outlined.KeyboardArrowDown,
                     contentDescription = "Cerrar letras",
-                    tint = textColor
+                    tint = foreground
                 )
             }
             Text(
                 text = stringResource(R.string.lyrics),
                 style = MaterialTheme.typography.titleMedium,
-                color = textColor
+                color = foreground
             )
         }
         when (lyrics) {
@@ -678,16 +683,16 @@ private fun LyricsSheet(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(color = textColor)
+                CircularProgressIndicator(color = foreground)
             }
             LyricsUiState.Instrumental -> LyricsCenteredMessage(
                 text = stringResource(R.string.lyrics_instrumental),
-                textColor = textColor,
+                textColor = foreground,
                 onRetry = null
             )
             LyricsUiState.NotFound -> LyricsCenteredMessage(
                 text = stringResource(R.string.lyrics_not_found),
-                textColor = textColor,
+                textColor = foreground,
                 onRetry = onRetry
             )
             is LyricsUiState.Plain -> LazyColumn(
@@ -698,7 +703,7 @@ private fun LyricsSheet(
                     Text(
                         text = lyrics.text,
                         style = MaterialTheme.typography.bodyLarge,
-                        color = textColor
+                        color = foreground
                     )
                 }
             }
@@ -706,7 +711,8 @@ private fun LyricsSheet(
                 lines = lyrics.lines,
                 position = position,
                 onSeek = onSeek,
-                onBase = textColor
+                accent = baseColor,
+                inactiveColor = foreground.copy(alpha = 0.62f)
             )
         }
     }
@@ -728,7 +734,7 @@ private fun LyricsCenteredMessage(
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
-            color = textColor,
+            color = textColor.copy(alpha = if (textColor == Color.White) 0.75f else 1f),
             textAlign = TextAlign.Center
         )
         if (onRetry != null) {
@@ -745,8 +751,16 @@ private fun SyncedLyrics(
     lines: List<LrcLine>,
     position: Long,
     onSeek: (Long) -> Unit,
-    onBase: Color
+    accent: Color?,
+    inactiveColor: Color
 ) {
+    val activeBackground = if (accent != null) {
+        if (accent.luminance() < 0.25f) accent.lighten(0.45f) else accent.lighten(0.12f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val activeText = if (activeBackground.luminance() > 0.5f) Color.Black else Color.White
+
     val listState = rememberLazyListState()
     var currentIndex = lines.indexOfLast { it.timeMs <= position }
     if (currentIndex < 0) currentIndex = 0
@@ -771,12 +785,12 @@ private fun SyncedLyrics(
                 } else {
                     MaterialTheme.typography.bodyLarge
                 },
-                color = if (active) onBase else onBase.copy(alpha = 0.5f),
+                color = if (active) activeText else inactiveColor,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (active) onBase.copy(alpha = 0.14f) else Color.Transparent
+                        if (active) activeBackground else Color.Transparent
                     )
                     .clickable { onSeek(line.timeMs) }
                     .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -784,6 +798,10 @@ private fun SyncedLyrics(
         }
     }
 }
+
+private fun Color.darken(amount: Float): Color = lerp(this, Color.Black, amount.coerceIn(0f, 1f))
+
+private fun Color.lighten(amount: Float): Color = lerp(this, Color.White, amount.coerceIn(0f, 1f))
 
 private fun formatTime(ms: Long): String {
     val totalSeconds = ms / 1000
