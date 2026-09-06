@@ -109,44 +109,42 @@ class MediaStoreScanner @Inject constructor(
     }
 
     fun scanGenres(): List<GenreScan> {
-        val uri = MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Audio.Genres._ID,
-            MediaStore.Audio.Genres.NAME
-        )
-
-        val genres = mutableListOf<GenreScan>()
+        val namesById = mutableMapOf<Long, String>()
         contentResolver.query(
-            uri,
-            projection,
+            MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Audio.Genres._ID, MediaStore.Audio.Genres.NAME),
             null,
             null,
             "${MediaStore.Audio.Genres.NAME} COLLATE NOCASE ASC"
         )?.use { cursor ->
             val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres._ID)
             val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)
-
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
-                val name = cursor.getString(nameCol) ?: "Unknown Genre"
-
-                val songIds = mutableListOf<Long>()
-                contentResolver.query(
-                    ContentUris.withAppendedId(uri, id),
-                    arrayOf(MediaStore.Audio.Genres.Members._ID),
-                    null,
-                    null,
-                    null
-                )?.use { memberCursor ->
-                    val songIdCol = memberCursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.Members._ID)
-                    while (memberCursor.moveToNext()) {
-                        songIds += memberCursor.getLong(songIdCol)
-                    }
-                }
-                genres += GenreScan(id = id, name = name, songIds = songIds)
+                val name = cursor.getString(nameCol)?.trim() ?: "Unknown Genre"
+                namesById[id] = name
             }
         }
-        return genres
+
+        val songsByGenreName = sortedMapOf<String, MutableList<Long>>(String.CASE_INSENSITIVE_ORDER)
+        contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.GENRE),
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+            null,
+            null
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
+            val genreCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.GENRE)
+            while (cursor.moveToNext()) {
+                val name = cursor.getString(genreCol)?.trim() ?: continue
+                songsByGenreName.getOrPut(name) { mutableListOf() } += cursor.getLong(idCol)
+            }
+        }
+
+        return namesById.map { (id, name) ->
+            GenreScan(id = id, name = name, songIds = songsByGenreName[name].orEmpty())
+        }
     }
 
     private fun albumArtUri(albumId: Long): Uri? =
