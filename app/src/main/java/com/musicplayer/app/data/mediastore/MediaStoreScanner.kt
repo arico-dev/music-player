@@ -16,8 +16,9 @@ class MediaStoreScanner @Inject constructor(
 ) {
 
     private val contentResolver = context.contentResolver
+    private val tagReader = TagReader()
 
-    fun scanSongs(): List<Song> {
+    fun scanSongs(): List<SongScan> {
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.TITLE,
@@ -34,7 +35,7 @@ class MediaStoreScanner @Inject constructor(
         val collection = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val sortOrder = "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC"
 
-        val songs = mutableListOf<Song>()
+        val songs = mutableListOf<SongScan>()
         contentResolver.query(
             collection,
             projection,
@@ -56,16 +57,25 @@ class MediaStoreScanner @Inject constructor(
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idCol)
                 val albumId = cursor.getLong(albumIdCol)
-                songs += Song(
-                    id = id,
-                    title = cursor.getString(titleCol) ?: "Unknown",
-                    artist = cursor.getString(artistCol) ?: "Unknown Artist",
-                    album = cursor.getString(albumCol) ?: "Unknown Album",
-                    durationMs = cursor.getLong(durationCol),
-                    path = cursor.getString(dataCol) ?: "",
-                    albumArtUri = albumArtUri(albumId),
-                    trackNumber = cursor.getInt(trackCol).takeIf { it > 0 },
-                    albumId = albumId.takeIf { it > 0 }
+                val path = cursor.getString(dataCol) ?: ""
+                val tags = tagReader.read(path)
+                val mediaArtist = cursor.getString(artistCol) ?: "Unknown Artist"
+                val mediaAlbum = cursor.getString(albumCol) ?: "Unknown Album"
+                val mediaTrack = cursor.getInt(trackCol)
+                songs += SongScan(
+                    song = Song(
+                        id = id,
+                        title = tags.title?.takeIf { it.isNotBlank() }
+                            ?: cursor.getString(titleCol) ?: "Unknown",
+                        artist = tags.primaryArtist ?: mediaArtist,
+                        album = tags.album?.takeIf { it.isNotBlank() } ?: mediaAlbum,
+                        durationMs = cursor.getLong(durationCol),
+                        path = path,
+                        albumArtUri = albumArtUri(albumId),
+                        trackNumber = tags.trackNumber ?: mediaTrack.takeIf { it > 0 },
+                        albumId = albumId.takeIf { it > 0 }
+                    ),
+                    albumArtist = tags.albumArtists.primary()
                 )
             }
         }
@@ -159,4 +169,9 @@ data class GenreScan(
     val id: Long,
     val name: String,
     val songIds: List<Long>
+)
+
+data class SongScan(
+    val song: Song,
+    val albumArtist: String?
 )

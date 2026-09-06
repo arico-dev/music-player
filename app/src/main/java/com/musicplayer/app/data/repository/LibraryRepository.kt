@@ -82,7 +82,8 @@ class LibraryRepository @Inject constructor(
         }
 
     suspend fun refresh() {
-        val songs = mediaStoreScanner.scanSongs()
+        val songScans = mediaStoreScanner.scanSongs()
+        val songs = songScans.map { it.song }
         val albums = mediaStoreScanner.scanAlbums()
         val genreScans = mediaStoreScanner.scanGenres()
 
@@ -94,8 +95,21 @@ class LibraryRepository @Inject constructor(
                 ArtistEntity(id = group.first().artist.hashCode().toLong(), name = name)
             }
 
+        val albumArtistByAlbumId = songScans
+            .mapNotNull { scan ->
+                scan.song.albumId?.takeIf { it > 0 }?.let { id -> id to scan.albumArtist }
+            }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, values) -> values.firstOrNull { !it.isNullOrBlank() } }
+
+        val albumsWithTags = albums.map { album ->
+            albumArtistByAlbumId[album.id]
+                ?.let { artist -> album.copy(artist = artist) }
+                ?: album
+        }
+
         songDao.upsertAll(songs.map { it.toEntity() })
-        albumDao.upsertAll(albums.map { it.toAlbumEntity() })
+        albumDao.upsertAll(albumsWithTags.map { it.toAlbumEntity() })
         artistDao.upsertAll(artists)
         genreDao.upsertAll(genreEntities)
 
@@ -108,6 +122,20 @@ class LibraryRepository @Inject constructor(
 
         if (genreEntities.isNotEmpty()) {
             genreDao.deleteNotIn(genreEntities.map { it.id })
+        }
+
+        // Remove artists that no longer have songs on device
+        if (songs.isNotEmpty()) {
+            val artistIds = songs.map { it.artist.hashCode().toLong() }.distinct()
+            artistDao.deleteNotIn(artistIds)
+        }
+
+        // Remove albums that no longer have songs on device
+        val existingAlbumIds = songs.mapNotNull { it.albumId }
+        if (existingAlbumIds.isNotEmpty()) {
+            albumDao.deleteNotIn(existingAlbumIds)
+        } else {
+            albumDao.clear()
         }
 
         // Remove songs that no longer exist on device

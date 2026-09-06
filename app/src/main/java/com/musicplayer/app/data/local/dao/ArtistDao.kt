@@ -41,4 +41,10 @@ interface ArtistDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(artists: List<ArtistEntity>)
+
+    @Query("DELETE FROM artists WHERE id NOT IN (:ids)")
+    suspend fun deleteNotIn(ids: List<Long>)
+
+    @Query("DELETE FROM artists")
+    suspend fun clear()
 }
