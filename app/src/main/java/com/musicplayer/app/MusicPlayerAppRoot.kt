@@ -1,5 +1,6 @@
 package com.musicplayer.app
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,11 +23,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.musicplayer.app.feature.home.HomeScreen
+import com.musicplayer.app.feature.library.LibraryDetailScreen
 import com.musicplayer.app.feature.library.LibraryScreen
 import com.musicplayer.app.feature.miniplayer.MiniPlayer
 import com.musicplayer.app.feature.player.PlayerScreen
@@ -41,12 +45,29 @@ object Routes {
     const val SETTINGS = "settings"
     const val PLAYER = "player"
 
+    const val ALBUM = "album/{albumId}"
+    const val ARTIST = "artist/{artistId}"
+    const val GENRE = "genre/{genreId}"
+    const val FOLDER = "folder?folderPath={folderPath}"
+
+    const val ALBUM_ARG = "albumId"
+    const val ARTIST_ARG = "artistId"
+    const val GENRE_ARG = "genreId"
+    const val FOLDER_ARG = "folderPath"
+
+    fun albumRoute(id: Long) = "album/$id"
+    fun artistRoute(id: Long) = "artist/$id"
+    fun genreRoute(id: Long) = "genre/$id"
+    fun folderRoute(path: String) = "folder?folderPath=${Uri.encode(path)}"
+
     val bottomTabs = listOf(
         BottomTab(HOME, Icons.Filled.Home, R.string.nav_home),
         BottomTab(LIBRARY, Icons.Filled.LibraryMusic, R.string.nav_library),
         BottomTab(SEARCH, Icons.Filled.Search, R.string.nav_search),
         BottomTab(SETTINGS, Icons.Filled.Settings, R.string.nav_settings)
     )
+
+    val fullScreenRoutes = setOf(PLAYER, ALBUM, ARTIST, GENRE, FOLDER)
 }
 
 data class BottomTab(
@@ -63,11 +84,11 @@ fun MusicPlayerAppRoot() {
 
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
-    val onPlayer = currentRoute == Routes.PLAYER
+    val isFullScreen = currentRoute in Routes.fullScreenRoutes
 
     Scaffold(
         bottomBar = {
-            if (!onPlayer) {
+            if (!isFullScreen) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     if (currentSong != null) {
                         MiniPlayer(
@@ -101,12 +122,56 @@ fun MusicPlayerAppRoot() {
             composable(Routes.HOME) { HomeScreen() }
             composable(Routes.LIBRARY) {
                 LibraryScreen(
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                    onSongClick = { navController.navigate(Routes.PLAYER) },
+                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
+                    onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) },
+                    onGenreClick = { genre -> navController.navigate(Routes.genreRoute(genre.id)) },
+                    onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) }
                 )
             }
             composable(Routes.SEARCH) { SearchScreen() }
             composable(Routes.SETTINGS) { SettingsScreen() }
             composable(Routes.PLAYER) { PlayerScreen() }
+
+            composable(
+                route = Routes.ALBUM,
+                arguments = listOf(navArgument(Routes.ALBUM_ARG) { type = NavType.LongType })
+            ) {
+                LibraryDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                )
+            }
+            composable(
+                route = Routes.ARTIST,
+                arguments = listOf(navArgument(Routes.ARTIST_ARG) { type = NavType.LongType })
+            ) {
+                LibraryDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                )
+            }
+            composable(
+                route = Routes.GENRE,
+                arguments = listOf(navArgument(Routes.GENRE_ARG) { type = NavType.LongType })
+            ) {
+                LibraryDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                )
+            }
+            composable(
+                route = Routes.FOLDER,
+                arguments = listOf(navArgument(Routes.FOLDER_ARG) {
+                    type = NavType.StringType
+                    defaultValue = ""
+                })
+            ) {
+                LibraryDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                )
+            }
         }
     }
 }
