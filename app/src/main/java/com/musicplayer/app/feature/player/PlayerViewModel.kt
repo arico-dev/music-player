@@ -3,9 +3,12 @@ package com.musicplayer.app.feature.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
+import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.core.model.SongMetadata
 import com.musicplayer.app.core.util.AlbumArtColorExtractor
+import com.musicplayer.app.data.lyrics.LyricsRepository
+import com.musicplayer.app.data.lyrics.LyricsResult
 import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,11 +22,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+sealed interface LyricsUiState {
+    data object Loading : LyricsUiState
+    data object Instrumental : LyricsUiState
+    data object NotFound : LyricsUiState
+    data class Synced(val lines: List<LrcLine>) : LyricsUiState
+    data class Plain(val text: String) : LyricsUiState
+}
+
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     private val playbackController: PlaybackController,
     private val colorExtractor: AlbumArtColorExtractor,
-    private val metadataReader: MetadataReader
+    private val metadataReader: MetadataReader,
+    private val lyricsRepository: LyricsRepository
 ) : ViewModel() {
 
     val currentSong: StateFlow<Song?> = playbackController.currentSong
@@ -56,10 +68,14 @@ class PlayerViewModel @Inject constructor(
     private val _songInfo = MutableStateFlow<SongMetadata?>(null)
     val songInfo: StateFlow<SongMetadata?> = _songInfo
 
+    private val _lyrics = MutableStateFlow<LyricsUiState>(LyricsUiState.NotFound)
+    val lyrics: StateFlow<LyricsUiState> = _lyrics
+
     init {
         viewModelScope.launch {
             playbackController.currentSong.collect { song ->
                 _dominantColor.value = colorExtractor.extractFromUri(song?.albumArtUri)
+                if (song != null) fetchLyrics(song)
             }
         }
         viewModelScope.launch {
@@ -96,5 +112,22 @@ class PlayerViewModel @Inject constructor(
 
     fun dismissSongInfo() {
         _songInfo.value = null
+    }
+
+    fun retryLyrics() {
+        val song = playbackController.currentSong.value ?: return
+        viewModelScope.launch { fetchLyrics(song) }
+    }
+
+    private suspend fun fetchLyrics(song: Song) {
+        _lyrics.value = LyricsUiState.Loading
+        _lyrics.value = withContext(Dispatchers.IO) {
+            when (val result = lyricsRepository.fetchSong(song.artist, song.title, song.album)) {
+                LyricsResult.NotFound -> LyricsUiState.NotFound
+                LyricsResult.Instrumental -> LyricsUiState.Instrumental
+                is LyricsResult.Plain -> LyricsUiState.Plain(result.text)
+                is LyricsResult.Synced -> LyricsUiState.Synced(result.lines)
+            }
+        }
     }
 }

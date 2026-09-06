@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -18,20 +19,25 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -42,6 +48,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.media3.common.Player
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,12 +62,14 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.rememberAsyncImagePainter
 import com.musicplayer.app.R
+import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
 
@@ -78,12 +87,14 @@ fun PlayerScreen(
     val repeatMode by viewModel.repeatMode.collectAsStateWithLifecycle()
     val dominantColor by viewModel.dominantColor.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
+    val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
 
     var showQueue by remember { mutableStateOf(false) }
+    var showLyrics by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (showQueue) {
-            QueueSheet(
+        when {
+            showQueue -> QueueSheet(
                 queue = queue,
                 currentIndex = currentIndex,
                 dominantColor = dominantColor,
@@ -91,8 +102,15 @@ fun PlayerScreen(
                 onSelect = viewModel::skipToIndex,
                 onInfo = viewModel::requestSongInfo
             )
-        } else {
-            PlayerContent(
+            showLyrics -> LyricsSheet(
+                lyrics = lyrics,
+                position = position,
+                dominantColor = dominantColor,
+                onClose = { showLyrics = false },
+                onSeek = viewModel::seekTo,
+                onRetry = viewModel::retryLyrics
+            )
+            else -> PlayerContent(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 position = position,
@@ -107,7 +125,8 @@ fun PlayerScreen(
                 onPrevious = viewModel::skipToPrevious,
                 onNext = viewModel::skipToNext,
                 onSeek = viewModel::seekTo,
-                onOpenQueue = { showQueue = true }
+                onOpenQueue = { showQueue = true },
+                onOpenLyrics = { showLyrics = true }
             )
         }
         songInfo?.let { song ->
@@ -135,7 +154,8 @@ private fun PlayerContent(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSeek: (Long) -> Unit,
-    onOpenQueue: () -> Unit
+    onOpenQueue: () -> Unit,
+    onOpenLyrics: () -> Unit
 ) {
     val baseColor = dominantColor?.let { Color(it) } ?: MaterialTheme.colorScheme.surface
     val onBase = if (dominantColor != null) Color.White else MaterialTheme.colorScheme.onSurface
@@ -193,9 +213,10 @@ private fun PlayerContent(
                         onBase = onBase
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    QueueToggleRow(
+                    ActionChipsRow(
                         queueSize = queueSize,
                         onOpenQueue = onOpenQueue,
+                        onOpenLyrics = onOpenLyrics,
                         onBase = onBase
                     )
                 }
@@ -238,9 +259,10 @@ private fun PlayerContent(
                     onBase = onBase
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                QueueToggleRow(
+                ActionChipsRow(
                     queueSize = queueSize,
                     onOpenQueue = onOpenQueue,
+                    onOpenLyrics = onOpenLyrics,
                     onBase = onBase
                 )
             }
@@ -375,26 +397,55 @@ IconButton(onClick = onToggleShuffle) {
 }
 
 @Composable
-private fun QueueToggleRow(
+private fun ActionChipsRow(
     queueSize: Int,
     onOpenQueue: () -> Unit,
+    onOpenLyrics: () -> Unit,
+    onBase: Color
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ActionChip(
+            icon = Icons.Filled.QueueMusic,
+            text = if (queueSize > 0) "Cola ($queueSize)" else "Cola",
+            onClick = onOpenQueue,
+            onBase = onBase
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        ActionChip(
+            icon = Icons.Filled.Lyrics,
+            text = stringResource(R.string.lyrics),
+            onClick = onOpenLyrics,
+            onBase = onBase
+        )
+    }
+}
+
+@Composable
+private fun ActionChip(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit,
     onBase: Color
 ) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onOpenQueue)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            imageVector = Icons.Filled.KeyboardArrowUp,
+            imageVector = icon,
             contentDescription = null,
             tint = onBase.copy(alpha = 0.8f)
         )
-        Spacer(modifier = Modifier.size(4.dp))
+        Spacer(modifier = Modifier.size(6.dp))
         Text(
-            text = if (queueSize > 0) "Cola ($queueSize)" else "Cola",
+            text = text,
             style = MaterialTheme.typography.labelLarge,
             color = onBase.copy(alpha = 0.8f)
         )
@@ -568,6 +619,168 @@ private fun QueueSheet(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LyricsSheet(
+    lyrics: LyricsUiState,
+    position: Long,
+    dominantColor: Int?,
+    onClose: () -> Unit,
+    onSeek: (Long) -> Unit,
+    onRetry: () -> Unit
+) {
+    val baseColor = dominantColor?.let { Color(it) }
+    val onBase = baseColor?.let { if (it.luminance() > 0.5f) Color.Black else Color.White }
+    val textColor = onBase ?: MaterialTheme.colorScheme.onSurface
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                if (baseColor != null) {
+                    Brush.verticalGradient(
+                        listOf(baseColor, baseColor.copy(alpha = 0.6f))
+                    )
+                } else {
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.background
+                        )
+                    )
+                }
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 8.dp, end = 24.dp, top = 12.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(
+                    imageVector = Icons.Outlined.KeyboardArrowDown,
+                    contentDescription = "Cerrar letras",
+                    tint = textColor
+                )
+            }
+            Text(
+                text = stringResource(R.string.lyrics),
+                style = MaterialTheme.typography.titleMedium,
+                color = textColor
+            )
+        }
+        when (lyrics) {
+            LyricsUiState.Loading -> Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = textColor)
+            }
+            LyricsUiState.Instrumental -> LyricsCenteredMessage(
+                text = stringResource(R.string.lyrics_instrumental),
+                textColor = textColor,
+                onRetry = null
+            )
+            LyricsUiState.NotFound -> LyricsCenteredMessage(
+                text = stringResource(R.string.lyrics_not_found),
+                textColor = textColor,
+                onRetry = onRetry
+            )
+            is LyricsUiState.Plain -> LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                item {
+                    Text(
+                        text = lyrics.text,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = textColor
+                    )
+                }
+            }
+            is LyricsUiState.Synced -> SyncedLyrics(
+                lines = lyrics.lines,
+                position = position,
+                onSeek = onSeek,
+                onBase = textColor
+            )
+        }
+    }
+}
+
+@Composable
+private fun LyricsCenteredMessage(
+    text: String,
+    textColor: Color,
+    onRetry: (() -> Unit)?
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyLarge,
+            color = textColor,
+            textAlign = TextAlign.Center
+        )
+        if (onRetry != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Button(onClick = onRetry) {
+                Text(text = stringResource(R.string.lyrics_retry))
+            }
+        }
+    }
+}
+
+@Composable
+private fun SyncedLyrics(
+    lines: List<LrcLine>,
+    position: Long,
+    onSeek: (Long) -> Unit,
+    onBase: Color
+) {
+    val listState = rememberLazyListState()
+    var currentIndex = lines.indexOfLast { it.timeMs <= position }
+    if (currentIndex < 0) currentIndex = 0
+
+    LaunchedEffect(currentIndex, lines) {
+        if (currentIndex > 0) {
+            listState.animateScrollToItem(maxOf(0, currentIndex - 1))
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 28.dp, vertical = 16.dp)
+    ) {
+        itemsIndexed(lines) { index, line ->
+            val active = index == currentIndex
+            Text(
+                text = line.text,
+                style = if (active) {
+                    MaterialTheme.typography.titleMedium
+                } else {
+                    MaterialTheme.typography.bodyLarge
+                },
+                color = if (active) onBase else onBase.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(
+                        if (active) onBase.copy(alpha = 0.14f) else Color.Transparent
+                    )
+                    .clickable { onSeek(line.timeMs) }
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            )
         }
     }
 }

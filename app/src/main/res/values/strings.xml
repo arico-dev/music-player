@@ -26,6 +26,10 @@
     <string name="next">Siguiente</string>
     <string name="queue">Cola</string>
     <string name="lyrics">Letras</string>
+    <string name="lyrics_loading">Cargando letras…</string>
+    <string name="lyrics_not_found">No se encontraron letras para esta canción.</string>
+    <string name="lyrics_instrumental">Esta canción parece ser instrumental.</string>
+    <string name="lyrics_retry">Reintentar</string>
 
     <!-- Song info -->
     <string name="song_info_title">Información de la canción</string>
