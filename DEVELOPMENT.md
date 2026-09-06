@@ -117,7 +117,6 @@ Notas prácticas:
 
 - **Commits por feature**, mensajes en español, imperativo (`feat:`, `fix:`, `refactor:`).
 - Compilar siempre antes de commitear (`assembleRelease` verde).
-- Preguntar antes de `push` a `origin/main`.
 - `PENDIENTES.md` es local (gitignore) y sirve de hoja de ruta: siguientes pasos Playlists → Widgets → Casting.
 
 ## Gotchas de arquitectura (no volver a caer)
