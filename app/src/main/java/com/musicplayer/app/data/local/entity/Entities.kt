@@ -51,3 +51,21 @@ data class SongGenreEntity(
     val songId: Long,
     val genreId: Long
 )
+
+@Entity(tableName = "playlists")
+data class PlaylistEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val createdAt: Long
+)
+
+@Entity(
+    tableName = "playlist_songs",
+    primaryKeys = ["playlistId", "songId"],
+    indices = [Index(value = ["playlistId"])]
+)
+data class PlaylistSongEntity(
+    val playlistId: Long,
+    val songId: Long,
+    val position: Int
+)

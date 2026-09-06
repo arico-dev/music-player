@@ -6,6 +6,8 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import com.musicplayer.app.data.local.dao.AlbumDao
 import com.musicplayer.app.data.local.dao.ArtistDao
 import com.musicplayer.app.data.local.dao.GenreDao
+import com.musicplayer.app.data.local.dao.PlaylistDao
+import com.musicplayer.app.data.local.dao.PlaylistSongDao
 import com.musicplayer.app.data.local.dao.SongDao
 import com.musicplayer.app.data.local.dao.SongGenreDao
 import com.musicplayer.app.data.local.database.MusicDatabase
@@ -48,6 +50,12 @@ object AppModule {
 
     @Provides
     fun provideSongGenreDao(db: MusicDatabase): SongGenreDao = db.songGenreDao()
+
+    @Provides
+    fun providePlaylistDao(db: MusicDatabase): PlaylistDao = db.playlistDao()
+
+    @Provides
+    fun providePlaylistSongDao(db: MusicDatabase): PlaylistSongDao = db.playlistSongDao()
 
     @Provides
     @Singleton
