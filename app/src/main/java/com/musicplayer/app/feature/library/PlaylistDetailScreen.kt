@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
@@ -32,6 +33,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -319,39 +321,72 @@ private fun AddSongsSheet(
     onDismiss: () -> Unit
 ) {
     var selected by remember { mutableStateOf<Set<Long>>(emptySet()) }
+    var query by remember { mutableStateOf("") }
     val toggle = { id: Long ->
         selected = if (id in selected) selected - id else selected + id
+    }
+    val filtered = remember(candidates, query) {
+        if (query.isBlank()) candidates
+        else candidates.filter {
+            it.title.contains(query, ignoreCase = true) || it.artist.contains(query, ignoreCase = true)
+        }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.playlist_add_songs)) },
         text = {
-            LazyColumn(modifier = Modifier.fillMaxWidth()) {
-                items(candidates) { song ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { toggle(song.id) }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    placeholder = { Text(stringResource(R.string.search_hint)) },
+                    leadingIcon = {
                         Icon(
-                            imageVector = if (song.id in selected) Icons.Filled.Check
-                            else Icons.Outlined.CheckBoxOutlineBlank,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = null
                         )
-                        Spacer(modifier = Modifier.size(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text(
-                                text = song.artist,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                    },
+                    singleLine = true
+                )
+                if (filtered.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.search_no_results),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxWidth()) {
+                        items(filtered) { song ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { toggle(song.id) }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (song.id in selected) Icons.Filled.Check
+                                    else Icons.Outlined.CheckBoxOutlineBlank,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.size(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(song.title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Text(
+                                        text = song.artist,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -362,7 +397,10 @@ private fun AddSongsSheet(
                 onClick = { onConfirm(songsOf(candidates, selected)) },
                 enabled = selected.isNotEmpty()
             ) {
-                Text(stringResource(R.string.playlist_add_songs))
+                Text(
+                    if (selected.isEmpty()) stringResource(R.string.playlist_add_songs)
+                    else stringResource(R.string.playlist_add_songs_selected, selected.size)
+                )
             }
         },
         dismissButton = {

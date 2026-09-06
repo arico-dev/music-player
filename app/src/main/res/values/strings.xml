@@ -35,6 +35,8 @@
     <string name="playlist_remove_song">Quitar de la playlist</string>
     <string name="playlist_move_up">Subir</string>
     <string name="playlist_move_down">Bajar</string>
+    <string name="playlist_add_songs_selected">Agregar %1$d</string>
+    <string name="search_no_results">Sin resultados</string>
     <string name="action_add_to_playlist">Agregar a playlist</string>
 
     <!-- Player -->
