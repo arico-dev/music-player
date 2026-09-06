@@ -65,6 +65,7 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
+import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
 
@@ -73,7 +74,8 @@ enum class LibraryTab(val labelRes: Int) {
     ALBUMS(R.string.tab_albums),
     ARTISTS(R.string.tab_artists),
     GENRES(R.string.tab_genres),
-    FOLDERS(R.string.tab_folders)
+    FOLDERS(R.string.tab_folders),
+    PLAYLISTS(R.string.tab_playlists)
 }
 
 @Composable
@@ -84,7 +86,8 @@ fun LibraryScreen(
     onAlbumClick: (Album) -> Unit = {},
     onArtistClick: (Artist) -> Unit = {},
     onGenreClick: (Genre) -> Unit = {},
-    onFolderClick: (Folder) -> Unit = {}
+    onFolderClick: (Folder) -> Unit = {},
+    onPlaylistClick: (Playlist) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val songs by viewModel.songs.collectAsStateWithLifecycle()
@@ -92,6 +95,7 @@ fun LibraryScreen(
     val artists by viewModel.artists.collectAsStateWithLifecycle()
     val genres by viewModel.genres.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
+    val playlists by viewModel.playlists.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -129,6 +133,7 @@ fun LibraryScreen(
                 artists = artists,
                 genres = genres,
                 folders = folders,
+                playlists = playlists,
                 selectedTab = selectedTab,
                 onSelectTab = viewModel::selectTab,
                 onSongClick = { song ->
@@ -136,10 +141,14 @@ fun LibraryScreen(
                     onSongClick(song)
                 },
                 onSongInfo = viewModel::requestSongInfo,
+                onAddToPlaylist = viewModel::addSongToPlaylist,
+                onCreatePlaylistWithSong = viewModel::createPlaylistWithSong,
                 onAlbumClick = onAlbumClick,
                 onArtistClick = onArtistClick,
                 onGenreClick = onGenreClick,
                 onFolderClick = onFolderClick,
+                onCreatePlaylist = viewModel::createPlaylist,
+                onPlaylistClick = onPlaylistClick,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -159,16 +168,22 @@ private fun LibraryTabs(
     artists: List<Artist>,
     genres: List<Genre>,
     folders: List<Folder>,
+    playlists: List<Playlist>,
     selectedTab: LibraryTab,
     onSelectTab: (LibraryTab) -> Unit,
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
+    onAddToPlaylist: (Song, Long) -> Unit,
+    onCreatePlaylistWithSong: (String, Song) -> Unit,
     onAlbumClick: (Album) -> Unit,
     onArtistClick: (Artist) -> Unit,
     onGenreClick: (Genre) -> Unit,
     onFolderClick: (Folder) -> Unit,
+    onCreatePlaylist: (String) -> Unit,
+    onPlaylistClick: (Playlist) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var songToAdd by remember { mutableStateOf<Song?>(null) }
     val tabs = LibraryTab.entries
 
     Column(modifier = modifier) {
@@ -188,6 +203,7 @@ private fun LibraryTabs(
                     songs = songs,
                     onSongClick = onSongClick,
                     onSongInfo = onSongInfo,
+                    onAddToPlaylist = { songToAdd = it },
                     modifier = Modifier.fillMaxSize()
                 )
                 LibraryTab.ALBUMS -> AlbumGrid(
@@ -210,8 +226,29 @@ private fun LibraryTabs(
                     onFolderClick = onFolderClick,
                     modifier = Modifier.fillMaxSize()
                 )
+                LibraryTab.PLAYLISTS -> PlaylistList(
+                    playlists = playlists,
+                    onCreate = onCreatePlaylist,
+                    onPlaylistClick = onPlaylistClick,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
+    }
+
+    songToAdd?.let { song ->
+        PlaylistPickerSheet(
+            playlists = playlists,
+            onPick = { playlistId ->
+                onAddToPlaylist(song, playlistId)
+                songToAdd = null
+            },
+            onCreate = { name ->
+                onCreatePlaylistWithSong(name, song)
+                songToAdd = null
+            },
+            onDismiss = { songToAdd = null }
+        )
     }
 }
 
@@ -248,6 +285,7 @@ private fun SongList(
     songs: List<Song>,
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
+    onAddToPlaylist: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (songs.isEmpty()) {
@@ -259,7 +297,8 @@ private fun SongList(
             SongRow(
                 song = song,
                 onClick = { onSongClick(song) },
-                onInfoClick = { onSongInfo(song) }
+                onInfoClick = { onSongInfo(song) },
+                onAddToPlaylist = { onAddToPlaylist(song) }
             )
         }
     }
@@ -269,7 +308,8 @@ private fun SongList(
 private fun SongRow(
     song: Song,
     onClick: () -> Unit,
-    onInfoClick: () -> Unit
+    onInfoClick: () -> Unit,
+    onAddToPlaylist: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Row(
@@ -336,6 +376,13 @@ private fun SongRow(
                     onClick = {
                         menuExpanded = false
                         onInfoClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.action_add_to_playlist)) },
+                    onClick = {
+                        menuExpanded = false
+                        onAddToPlaylist()
                     }
                 )
             }

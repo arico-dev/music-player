@@ -6,10 +6,12 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
+import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.core.model.SongMetadata
 import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.data.repository.LibraryRepository
+import com.musicplayer.app.data.repository.PlaylistRepository
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -29,6 +31,7 @@ data class LibraryUiState(
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
     private val repository: LibraryRepository,
+    private val playlistRepository: PlaylistRepository,
     private val playbackController: PlaybackController,
     private val metadataReader: MetadataReader
 ) : ViewModel() {
@@ -58,6 +61,9 @@ class LibraryViewModel @Inject constructor(
     val folders: StateFlow<List<Folder>> = repository.folders
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val playlists: StateFlow<List<Playlist>> = playlistRepository.playlists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     private val _songInfo = MutableStateFlow<SongMetadata?>(null)
     val songInfo: StateFlow<SongMetadata?> = _songInfo
 
@@ -79,6 +85,25 @@ class LibraryViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true)
             repository.refresh()
             _uiState.value = _uiState.value.copy(isLoading = false)
+        }
+    }
+
+    fun createPlaylist(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch { playlistRepository.create(trimmed) }
+    }
+
+    fun addSongToPlaylist(song: Song, playlistId: Long) {
+        viewModelScope.launch { playlistRepository.addSongs(playlistId, listOf(song.id)) }
+    }
+
+    fun createPlaylistWithSong(name: String, song: Song) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            val playlistId = playlistRepository.create(trimmed)
+            playlistRepository.addSongs(playlistId, listOf(song.id))
         }
     }
 

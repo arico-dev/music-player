@@ -14,6 +14,28 @@
     <string name="tab_artists">Artistas</string>
     <string name="tab_genres">Géneros</string>
     <string name="tab_folders">Carpetas</string>
+    <string name="tab_playlists">Playlists</string>
+
+    <!-- Playlists -->
+    <string name="playlist_new">Nueva playlist</string>
+    <string name="playlist_name">Nombre</string>
+    <string name="playlist_create">Crear</string>
+    <string name="playlist_empty">Aún no hay playlists.\nPulsa “Nueva playlist” para crear una.</string>
+    <string name="playlist_empty_detail">Esta playlist está vacía.\nAñade canciones desde el menú ⋮.</string>
+    <string name="playlist_songs_count">%1$d canciones</string>
+    <string name="playlist_add_songs">Agregar canciones</string>
+    <string name="playlist_added">Agregada a la playlist</string>
+    <string name="playlist_created">Playlist creada</string>
+    <string name="playlist_rename">Renombrar</string>
+    <string name="playlist_delete">Eliminar</string>
+    <string name="playlist_delete_confirm_title">¿Eliminar playlist?</string>
+    <string name="playlist_delete_confirm_message">Se quitará de tu biblioteca. Las canciones permanecen en tu dispositivo.</string>
+    <string name="playlist_cancel">Cancelar</string>
+    <string name="playlist_confirm">Confirmar</string>
+    <string name="playlist_remove_song">Quitar de la playlist</string>
+    <string name="playlist_move_up">Subir</string>
+    <string name="playlist_move_down">Bajar</string>
+    <string name="action_add_to_playlist">Agregar a playlist</string>
 
     <!-- Player -->
     <string name="now_playing">En reproducción</string>

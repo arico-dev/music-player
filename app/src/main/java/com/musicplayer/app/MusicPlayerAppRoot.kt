@@ -32,6 +32,7 @@ import androidx.navigation.navArgument
 import com.musicplayer.app.feature.home.HomeScreen
 import com.musicplayer.app.feature.library.LibraryDetailScreen
 import com.musicplayer.app.feature.library.LibraryScreen
+import com.musicplayer.app.feature.library.PlaylistDetailScreen
 import com.musicplayer.app.feature.miniplayer.MiniPlayer
 import com.musicplayer.app.feature.player.PlayerScreen
 import com.musicplayer.app.feature.search.SearchScreen
@@ -49,16 +50,19 @@ object Routes {
     const val ARTIST = "artist/{artistId}"
     const val GENRE = "genre/{genreId}"
     const val FOLDER = "folder?folderPath={folderPath}"
+    const val PLAYLIST = "playlist/{playlistId}"
 
     const val ALBUM_ARG = "albumId"
     const val ARTIST_ARG = "artistId"
     const val GENRE_ARG = "genreId"
     const val FOLDER_ARG = "folderPath"
+    const val PLAYLIST_ARG = "playlistId"
 
     fun albumRoute(id: Long) = "album/$id"
     fun artistRoute(id: Long) = "artist/$id"
     fun genreRoute(id: Long) = "genre/$id"
     fun folderRoute(path: String) = "folder?folderPath=${Uri.encode(path)}"
+    fun playlistRoute(id: Long) = "playlist/$id"
 
     val bottomTabs = listOf(
         BottomTab(HOME, Icons.Filled.Home, R.string.nav_home),
@@ -67,7 +71,7 @@ object Routes {
         BottomTab(SETTINGS, Icons.Filled.Settings, R.string.nav_settings)
     )
 
-    val fullScreenRoutes = setOf(PLAYER, ALBUM, ARTIST, GENRE, FOLDER)
+    val fullScreenRoutes = setOf(PLAYER, ALBUM, ARTIST, GENRE, FOLDER, PLAYLIST)
 }
 
 data class BottomTab(
@@ -128,7 +132,8 @@ fun MusicPlayerAppRoot() {
                     onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
                     onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) },
                     onGenreClick = { genre -> navController.navigate(Routes.genreRoute(genre.id)) },
-                    onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) }
+                    onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) },
+                    onPlaylistClick = { playlist -> navController.navigate(Routes.playlistRoute(playlist.id)) }
                 )
             }
             composable(Routes.SEARCH) {
@@ -176,6 +181,15 @@ fun MusicPlayerAppRoot() {
                 })
             ) {
                 LibraryDetailScreen(
+                    onBack = { navController.popBackStack() },
+                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                )
+            }
+            composable(
+                route = Routes.PLAYLIST,
+                arguments = listOf(navArgument(Routes.PLAYLIST_ARG) { type = NavType.LongType })
+            ) {
+                PlaylistDetailScreen(
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) }
                 )
