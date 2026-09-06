@@ -131,7 +131,13 @@ fun MusicPlayerAppRoot() {
                     onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) }
                 )
             }
-            composable(Routes.SEARCH) { SearchScreen() }
+            composable(Routes.SEARCH) {
+                SearchScreen(
+                    onSongClick = { navController.navigate(Routes.PLAYER) },
+                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
+                    onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) }
+                )
+            }
             composable(Routes.SETTINGS) { SettingsScreen() }
             composable(Routes.PLAYER) { PlayerScreen() }
 
