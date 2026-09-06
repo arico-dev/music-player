@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -350,15 +351,22 @@ private fun AlbumGrid(
         EmptyHint(modifier = modifier)
         return
     }
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
-        modifier = modifier,
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        items(albums, key = { it.id }) { album ->
-            AlbumCard(album = album, onClick = { onAlbumClick(album) })
+    BoxWithConstraints(modifier = modifier) {
+        val columnCount = when {
+            maxWidth >= 900.dp -> 4
+            maxWidth >= 620.dp -> 3
+            else -> 2
+        }
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columnCount),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(albums, key = { it.id }) { album ->
+                AlbumCard(album = album, onClick = { onAlbumClick(album) })
+            }
         }
     }
 }
