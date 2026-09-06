@@ -36,11 +36,18 @@ data class ArtistEntity(
     val name: String
 )
 
-@Entity(
-    tableName = "genres",
-    indices = [Index(value = ["name"], unique = true)]
-)
+@Entity(tableName = "genres")
 data class GenreEntity(
-    @PrimaryKey(autoGenerate = true) val gid: Long = 0,
+    @PrimaryKey val id: Long,
     val name: String
+)
+
+@Entity(
+    tableName = "song_genres",
+    primaryKeys = ["songId", "genreId"],
+    indices = [Index(value = ["genreId"])]
+)
+data class SongGenreEntity(
+    val songId: Long,
+    val genreId: Long
 )

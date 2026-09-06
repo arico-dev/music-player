@@ -22,3 +22,9 @@ data class Genre(
     val name: String,
     val trackCount: Int
 )
+
+data class Folder(
+    val path: String,
+    val name: String,
+    val songCount: Int
+)

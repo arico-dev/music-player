@@ -7,10 +7,37 @@ import androidx.room.Query
 import com.musicplayer.app.data.local.entity.ArtistEntity
 import kotlinx.coroutines.flow.Flow
 
+data class ArtistWithCounts(
+    val id: Long,
+    val name: String,
+    val albumCount: Int,
+    val trackCount: Int
+)
+
 @Dao
 interface ArtistDao {
-    @Query("SELECT * FROM artists ORDER BY name COLLATE NOCASE ASC")
-    fun observeAll(): Flow<List<ArtistEntity>>
+
+    @Query(
+        """
+        SELECT a.id, a.name,
+            (SELECT COUNT(DISTINCT s.albumId) FROM songs s WHERE s.artistId = a.id) AS albumCount,
+            (SELECT COUNT(*) FROM songs s WHERE s.artistId = a.id) AS trackCount
+        FROM artists a
+        ORDER BY a.name COLLATE NOCASE ASC
+        """
+    )
+    fun observeAllWithCounts(): Flow<List<ArtistWithCounts>>
+
+    @Query(
+        """
+        SELECT a.id, a.name,
+            (SELECT COUNT(DISTINCT s.albumId) FROM songs s WHERE s.artistId = a.id) AS albumCount,
+            (SELECT COUNT(*) FROM songs s WHERE s.artistId = a.id) AS trackCount
+        FROM artists a
+        WHERE a.id = :id
+        """
+    )
+    fun observeByIdWithCounts(id: Long): Flow<ArtistWithCounts?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(artists: List<ArtistEntity>)

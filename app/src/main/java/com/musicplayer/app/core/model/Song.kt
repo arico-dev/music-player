@@ -14,4 +14,5 @@ data class Song(
     val albumId: Long?
 ) {
     val uri: Uri get() = Uri.parse(path)
+    val folderPath: String get() = path.substringBeforeLast('/', "").ifEmpty { "/" }
 }

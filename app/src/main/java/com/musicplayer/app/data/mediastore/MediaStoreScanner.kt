@@ -108,6 +108,47 @@ class MediaStoreScanner @Inject constructor(
         return albums
     }
 
+    fun scanGenres(): List<GenreScan> {
+        val uri = MediaStore.Audio.Genres.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(
+            MediaStore.Audio.Genres._ID,
+            MediaStore.Audio.Genres.NAME
+        )
+
+        val genres = mutableListOf<GenreScan>()
+        contentResolver.query(
+            uri,
+            projection,
+            null,
+            null,
+            "${MediaStore.Audio.Genres.NAME} COLLATE NOCASE ASC"
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres._ID)
+            val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.NAME)
+
+            while (cursor.moveToNext()) {
+                val id = cursor.getLong(idCol)
+                val name = cursor.getString(nameCol) ?: "Unknown Genre"
+
+                val songIds = mutableListOf<Long>()
+                contentResolver.query(
+                    ContentUris.withAppendedId(uri, id),
+                    arrayOf(MediaStore.Audio.Genres.Members._ID),
+                    null,
+                    null,
+                    null
+                )?.use { memberCursor ->
+                    val songIdCol = memberCursor.getColumnIndexOrThrow(MediaStore.Audio.Genres.Members._ID)
+                    while (memberCursor.moveToNext()) {
+                        songIds += memberCursor.getLong(songIdCol)
+                    }
+                }
+                genres += GenreScan(id = id, name = name, songIds = songIds)
+            }
+        }
+        return genres
+    }
+
     private fun albumArtUri(albumId: Long): Uri? =
         if (albumId > 0) {
             ContentUris.withAppendedId(Uri.parse("content://media/external/audio/albumart"), albumId)
@@ -115,3 +156,9 @@ class MediaStoreScanner @Inject constructor(
             null
         }
 }
+
+data class GenreScan(
+    val id: Long,
+    val name: String,
+    val songIds: List<Long>
+)

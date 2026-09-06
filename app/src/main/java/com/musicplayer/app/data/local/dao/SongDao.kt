@@ -12,6 +12,12 @@ interface SongDao {
     @Query("SELECT * FROM songs ORDER BY title COLLATE NOCASE ASC")
     fun observeAll(): Flow<List<SongEntity>>
 
+    @Query("SELECT * FROM songs WHERE albumId = :albumId ORDER BY COALESCE(trackNumber, 9999) ASC, title COLLATE NOCASE ASC")
+    fun observeByAlbum(albumId: Long): Flow<List<SongEntity>>
+
+    @Query("SELECT * FROM songs WHERE artistId = :artistId ORDER BY album COLLATE NOCASE ASC, COALESCE(trackNumber, 9999) ASC")
+    fun observeByArtist(artistId: Long): Flow<List<SongEntity>>
+
     @Query("SELECT * FROM songs")
     suspend fun getAll(): List<SongEntity>
 

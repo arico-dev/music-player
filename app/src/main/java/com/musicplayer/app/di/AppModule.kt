@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.room.Room
 import com.musicplayer.app.data.local.dao.AlbumDao
 import com.musicplayer.app.data.local.dao.ArtistDao
+import com.musicplayer.app.data.local.dao.GenreDao
 import com.musicplayer.app.data.local.dao.SongDao
+import com.musicplayer.app.data.local.dao.SongGenreDao
 import com.musicplayer.app.data.local.database.MusicDatabase
 import dagger.Module
 import dagger.Provides
@@ -32,4 +34,10 @@ object AppModule {
 
     @Provides
     fun provideArtistDao(db: MusicDatabase): ArtistDao = db.artistDao()
+
+    @Provides
+    fun provideGenreDao(db: MusicDatabase): GenreDao = db.genreDao()
+
+    @Provides
+    fun provideSongGenreDao(db: MusicDatabase): SongGenreDao = db.songGenreDao()
 }
