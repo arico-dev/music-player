@@ -24,27 +24,48 @@ class LyricsRepository @Inject constructor(
 }
 
 suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResult = runCatching {
-        val response = api.getLyrics(
-            artistName = clean(artist).takeIf { it.isNotEmpty() },
-            trackName = clean(title),
-            albumName = clean(album ?: "").takeIf { it.isNotEmpty() }
-        )
-        val record = if (response.isSuccessful) response.body() else null
-        record ?: api.search(clean(title), page = 1).pickBest(album)
+        val cleanArtist = clean(artist).takeIf { it.isNotEmpty() }
+        val cleanTitle = clean(title)
+        val cleanAlbum = clean(album ?: "").takeIf { it.isNotEmpty() }
+
+        val exact = api.getLyrics(
+            artistName = cleanArtist,
+            trackName = cleanTitle,
+            albumName = cleanAlbum
+        ).takeIf { it.isSuccessful }?.body()
+
+        val record = if (exact != null && !exact.syncedLyrics.isNullOrBlank()) {
+            exact
+        } else {
+            api.search(cleanTitle, page = 1).bestMatch(album, artist, exact)
+        }
+        record
     }.fold(
         onSuccess = { record -> record.toResult() },
         onFailure = { LyricsResult.NotFound }
     )
 
-    private fun List<LrcLibLyrics>.pickBest(album: String?): LrcLibLyrics? {
-        if (isEmpty()) return null
+    private fun List<LrcLibLyrics>.bestMatch(
+        album: String?,
+        artist: String?,
+        fallback: LrcLibLyrics?
+    ): LrcLibLyrics? {
+        if (isEmpty()) return fallback
         val albumKey = album?.let { clean(it).lowercase() }
+        val artistKey = artist?.let { clean(it).lowercase() }?.takeIf { it.isNotEmpty() }
+        val sameArtist: (LrcLibLyrics) -> Boolean = { rec ->
+            artistKey == null || clean(rec.artistName ?: "").lowercase().contains(artistKey)
+        }
+        val synced: (LrcLibLyrics) -> Boolean = { !it.syncedLyrics.isNullOrBlank() }
+
         albumKey?.let { key ->
+            firstOrNull { clean(it.albumName ?: "").lowercase() == key && sameArtist(it) && synced(it) }?.let { return it }
+            firstOrNull { clean(it.albumName ?: "").lowercase() == key && synced(it) }?.let { return it }
+            firstOrNull { clean(it.albumName ?: "").lowercase() == key && sameArtist(it) }?.let { return it }
             firstOrNull { clean(it.albumName ?: "").lowercase() == key }?.let { return it }
         }
-        firstOrNull { it.albumName.isNullOrBlank() && !it.syncedLyrics.isNullOrBlank() }?.let { return it }
-        firstOrNull { !it.syncedLyrics.isNullOrBlank() }?.let { return it }
-        return first()
+        firstOrNull { sameArtist(it) && synced(it) }?.let { return it }
+        return fallback
     }
 
     private fun LrcLibLyrics?.toResult(): LyricsResult = when {
