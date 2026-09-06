@@ -79,9 +79,4 @@ class PlayerViewModel @Inject constructor(
     fun toggleShuffle() = playbackController.setShuffleEnabled(!playbackController.isShuffled)
 
     fun cycleRepeatMode() = playbackController.toggleRepeatMode()
-
-    override fun onCleared() {
-        playbackController.release()
-        super.onCleared()
-    }
 }
