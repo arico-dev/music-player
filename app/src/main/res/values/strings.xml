@@ -18,6 +18,14 @@
     <string name="nav_search">Buscar</string>
     <string name="nav_settings">Ajustes</string>
 
+    <!-- Home -->
+    <string name="home_resume">Seguir escuchando</string>
+    <string name="home_resume_play">Reanudar la última sesión</string>
+    <string name="home_now_playing">En reproducción</string>
+    <string name="home_now_playing_pause">Pausar reproducción</string>
+    <string name="home_recents">Escuchados recientemente</string>
+    <string name="home_recents_empty">Todavía no has reproducido nada.\nVe a Biblioteca, elige una canción y vuelve aquí.</string>
+
     <!-- Library tabs -->
     <string name="tab_songs">Canciones</string>
     <string name="tab_albums">Álbumes</string>

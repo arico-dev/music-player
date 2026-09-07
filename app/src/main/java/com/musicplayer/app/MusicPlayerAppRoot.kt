@@ -125,7 +125,25 @@ fun MusicPlayerAppRoot() {
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            composable(Routes.HOME) { HomeScreen() }
+            composable(Routes.HOME) {
+                val isPlaying by rootViewModel.playbackController.isPlaying.collectAsStateWithLifecycle()
+                val currentSong by rootViewModel.playbackController.currentSong.collectAsStateWithLifecycle()
+                HomeScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
+                    onResumeSession = {
+                        rootViewModel.playbackController.resumeLastSession()
+                        navController.navigate(Routes.PLAYER)
+                    },
+                    onTogglePlayPause = {
+                        rootViewModel.playbackController.togglePlayPause()
+                    },
+                    onRecentSongClick = { song ->
+                        rootViewModel.playbackController.playSongs(listOf(song))
+                        navController.navigate(Routes.PLAYER)
+                    }
+                )
+            }
             composable(Routes.LIBRARY) {
                 LibraryScreen(
                     onSongClick = { navController.navigate(Routes.PLAYER) },

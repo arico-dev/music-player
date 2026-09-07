@@ -12,6 +12,7 @@ import androidx.glance.appwidget.updateAll
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.local.dao.SongDao
 import com.musicplayer.app.data.local.entity.SongEntity
+import com.musicplayer.app.data.recents.RecentStore
 import com.musicplayer.app.feature.widget.MusicWidget
 import com.musicplayer.app.feature.widget.SessionState
 import com.musicplayer.app.feature.widget.SessionStateStore
@@ -24,6 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.CountDownLatch
@@ -75,6 +77,13 @@ class PlaybackController @Inject constructor(
     private val restoreActions = ArrayDeque<() -> Unit>()
 
     init {
+        // Alimenta el historial de "Escuchados recientemente" cada vez que cambia la canción.
+        widgetScope.launch {
+            _currentSong.drop(1).collect { song ->
+                song?.let { RecentStore.addOrMoveTop(context, it.id) }
+            }
+        }
+
         // Guarda la posición periódicamente mientras suena, para reanudar fielmente en frío.
         widgetScope.launch {
             while (true) {
@@ -252,6 +261,36 @@ class PlaybackController @Inject constructor(
             p.prepare()
             p.play()
             refreshWidget()
+        }
+    }
+
+    /**
+     * Reanuda la última sesión guardada (cola + índice + posición): sirve a la tarjeta
+     * "Seguir escuchando" de Inicio. Si el player ya tiene esa sesión cargada solo se
+     * busca la posición y se reproduce; si no, la re-aplica desde las canciones en memoria
+     * o recuperadas de la base de datos.
+     */
+    fun resumeLastSession() {
+        widgetScope.launch {
+            val session = SessionStateStore.load(context) ?: return@launch
+            val savedIds = session.songIds
+            val restoredSongs = if (songQueue.map { it.id } == savedIds) {
+                songQueue
+            } else {
+                songDao.getByIds(savedIds).map { it.toSong() }
+            }
+            if (restoredSongs.isEmpty()) return@launch
+            val targetId = restoredSongs.getOrNull(session.index)?.id
+            withPlayer { p ->
+                val alreadyLoaded = p.mediaItemCount == restoredSongs.size &&
+                    p.currentMediaItem?.mediaId == targetId?.toString()
+                if (alreadyLoaded) {
+                    p.seekTo(session.positionMs)
+                } else {
+                    applySessionToPlayer(p, restoredSongs, session.index, session.positionMs)
+                }
+                p.play()
+            }
         }
     }
 
