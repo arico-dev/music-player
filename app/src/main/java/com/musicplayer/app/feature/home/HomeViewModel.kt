@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.local.dao.AlbumDao
+import com.musicplayer.app.data.local.dao.GenreDao
 import com.musicplayer.app.data.local.dao.SongDao
+import com.musicplayer.app.data.local.dao.SongGenreDao
 import com.musicplayer.app.data.local.entity.SongEntity
 import com.musicplayer.app.data.recents.RecentStore
 import com.musicplayer.app.data.usage.UsageData
@@ -37,7 +39,9 @@ data class ResumeEntry(
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val songDao: SongDao,
-    private val albumDao: AlbumDao
+    private val albumDao: AlbumDao,
+    private val genreDao: GenreDao,
+    private val songGenreDao: SongGenreDao
 ) : ViewModel() {
 
     /** Snapshot de uso (tiempo total, por hora, conteos). */
@@ -51,6 +55,17 @@ class HomeViewModel @Inject constructor(
                 flowOf(emptyList())
             } else {
                 flow { emit(computeTopAlbums(data)) }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Géneros más escuchados (top 6 por suma de reproducciones de sus canciones). */
+    val topGenres: StateFlow<List<String>> = usage
+        .flatMapLatest { data ->
+            if (data.plays.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                flow { emit(computeTopGenres(data)) }
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -73,6 +88,24 @@ class HomeViewModel @Inject constructor(
         if (rankedIds.isEmpty()) return emptyList()
         val byId = albumDao.getByIds(rankedIds).associateBy { it.id }
         return rankedIds.mapNotNull { byId[it]?.toAlbum() }
+    }
+
+    /** Géneros escuchados ordenados por nº de reproducciones (una canción pesa en cada género suyo). */
+    private suspend fun computeTopGenres(data: UsageData): List<String> {
+        val songIds = data.plays.keys.toList()
+        val relations = songGenreDao.getSongGenres(songIds)
+        if (relations.isEmpty()) return emptyList()
+        val weightByGenre = HashMap<Long, Int>()
+        relations.forEach { rel ->
+            val plays = data.plays[rel.songId] ?: 0
+            weightByGenre[rel.genreId] = (weightByGenre[rel.genreId] ?: 0) + plays
+        }
+        val ranked = weightByGenre.entries
+            .sortedByDescending { it.value }
+            .take(6)
+            .map { it.key }
+        val byId = genreDao.getByIds(ranked).associateBy { it.id }
+        return ranked.mapNotNull { byId[it]?.name }
     }
 
     /** Historial de canción, resolviendo ids contra la biblioteca y descartando las borradas. */

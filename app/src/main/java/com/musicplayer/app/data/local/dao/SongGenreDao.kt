@@ -26,4 +26,7 @@ interface SongGenreDao {
         """
     )
     fun observeSongsByGenre(genreId: Long): Flow<List<SongEntity>>
+
+    @Query("SELECT songId, genreId FROM song_genres WHERE songId IN (:songIds)")
+    suspend fun getSongGenres(songIds: List<Long>): List<SongGenreEntity>
 }

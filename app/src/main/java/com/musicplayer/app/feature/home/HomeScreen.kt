@@ -62,6 +62,7 @@ fun HomeScreen(
     val resumeEntry by viewModel.resumeEntry.collectAsStateWithLifecycle()
     val usage by viewModel.usage.collectAsStateWithLifecycle()
     val topAlbums by viewModel.topAlbums.collectAsStateWithLifecycle()
+    val topGenres by viewModel.topGenres.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -83,9 +84,12 @@ fun HomeScreen(
             item(key = "greeting", span = { GridItemSpan(maxLineSpan) }) {
                 Greeting()
             }
-            if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
-                item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
-                    StatsCard(usage = usage, now = now)
+            if (topAlbums.isNotEmpty()) {
+                item(key = "albums_title", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionTitle(text = stringResource(R.string.home_top_albums))
+                }
+                items(topAlbums, key = { it.id }) { album ->
+                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
                 }
             }
             val resume = resumeEntry
@@ -99,12 +103,9 @@ fun HomeScreen(
                     )
                 }
             }
-            if (topAlbums.isNotEmpty()) {
-                item(key = "albums_title", span = { GridItemSpan(maxLineSpan) }) {
-                    SectionTitle(text = stringResource(R.string.home_top_albums))
-                }
-                items(topAlbums, key = { it.id }) { album ->
-                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
+            if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
+                item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
+                    StatsCard(usage = usage, now = now, genres = topGenres)
                 }
             }
             item(key = "recents_title", span = { GridItemSpan(maxLineSpan) }) {
