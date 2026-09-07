@@ -106,6 +106,7 @@ fun PlayerScreen(
             showLyrics -> LyricsSheet(
                 lyrics = lyrics,
                 position = position,
+                duration = duration,
                 dominantColor = dominantColor,
                 onClose = { showLyrics = false },
                 onSeek = viewModel::seekTo,
@@ -630,6 +631,7 @@ private fun QueueSheet(
 private fun LyricsSheet(
     lyrics: LyricsUiState,
     position: Long,
+    duration: Long,
     dominantColor: Int?,
     onClose: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -695,18 +697,13 @@ private fun LyricsSheet(
                 textColor = foreground,
                 onRetry = onRetry
             )
-            is LyricsUiState.Plain -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp)
-            ) {
-                item {
-                    Text(
-                        text = lyrics.text,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = foreground
-                    )
-                }
-            }
+            is LyricsUiState.Plain -> PlainLyrics(
+                text = lyrics.text,
+                position = position,
+                duration = duration,
+                accent = baseColor,
+                inactiveColor = foreground.copy(alpha = 0.62f)
+            )
             is LyricsUiState.Synced -> SyncedLyrics(
                 lines = lyrics.lines,
                 position = position,
@@ -742,6 +739,69 @@ private fun LyricsCenteredMessage(
             Button(onClick = onRetry) {
                 Text(text = stringResource(R.string.lyrics_retry))
             }
+        }
+    }
+}
+
+@Composable
+private fun PlainLyrics(
+    text: String,
+    position: Long,
+    duration: Long,
+    accent: Color?,
+    inactiveColor: Color
+) {
+    val activeBackground = if (accent != null) {
+        if (accent.luminance() < 0.25f) accent.lighten(0.45f) else accent.lighten(0.12f)
+    } else {
+        MaterialTheme.colorScheme.primary
+    }
+    val activeText = if (activeBackground.luminance() > 0.5f) Color.Black else Color.White
+
+    val lines = remember(text) { text.split('\n').filterNot { it.isBlank() } }
+    if (lines.size <= 1) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = inactiveColor.copy(alpha = 1f)
+            )
+        }
+        return
+    }
+
+    val perLineMs = if (duration > 0) duration / lines.size else PLAIN_LINE_FALLBACK_MS
+    val rawIndex = (position / perLineMs).toInt()
+    val currentIndex = rawIndex.coerceIn(0, lines.lastIndex)
+
+    val listState = rememberLazyListState()
+    LaunchedEffect(currentIndex, lines) {
+        if (currentIndex > 0) {
+            listState.animateScrollToItem(maxOf(0, currentIndex - 1))
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 28.dp, vertical = 16.dp)
+    ) {
+        itemsIndexed(lines) { index, line ->
+            val active = index == currentIndex
+            Text(
+                text = line,
+                style = if (active) {
+                    MaterialTheme.typography.titleMedium
+                } else {
+                    MaterialTheme.typography.bodyLarge
+                },
+                color = if (active) activeText else inactiveColor,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(if (active) activeBackground else Color.Transparent)
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
+            )
         }
     }
 }
@@ -809,3 +869,5 @@ private fun formatTime(ms: Long): String {
     val seconds = totalSeconds % 60
     return "%02d:%02d".format(minutes, seconds)
 }
+
+private const val PLAIN_LINE_FALLBACK_MS = 4000L
