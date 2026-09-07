@@ -1,5 +1,7 @@
 package com.musicplayer.app.data.lyrics
 
+import android.util.Log
+import android.util.LruCache
 import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.util.LrcParser
 import javax.inject.Inject
@@ -17,6 +19,8 @@ class LyricsRepository @Inject constructor(
     private val api: LrcLibApi
 ) {
 
+    private val cache = LruCache<String, LyricsResult>(12)
+
     private val clean: (String) -> String = { raw ->
     raw.replace(Regex("""[^\p{L}\p{N} ]"""), " ")
         .replace(Regex("""\s+"""), " ")
@@ -27,6 +31,13 @@ suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResu
         val cleanArtist = clean(artist).takeIf { it.isNotEmpty() }
         val cleanTitle = clean(title)
         val cleanAlbum = clean(album ?: "").takeIf { it.isNotEmpty() }
+
+        cacheKey(cleanArtist, cleanTitle, cleanAlbum)?.let { key ->
+            cache.get(key)?.let {
+                Log.d(TAG, "letras desde caché ($key)")
+                return it
+            }
+        }
 
         val exact = api.getLyrics(
             artistName = cleanArtist,
@@ -41,9 +52,22 @@ suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResu
         }
         record
     }.fold(
-        onSuccess = { record -> record.toResult() },
+        onSuccess = { record ->
+            val result = record.toResult()
+            if (result != LyricsResult.NotFound) {
+                cacheKey(clean(artist), clean(title), clean(album ?: "").takeIf { it.isNotEmpty() })
+                    ?.let { key -> cache.put(key, result) }
+            }
+            result
+        },
         onFailure = { LyricsResult.NotFound }
     )
+
+    private fun cacheKey(artist: String?, title: String?, album: String?): String? {
+        if (title.isNullOrBlank()) return null
+        return listOf(artist.orEmpty(), title, album.orEmpty())
+            .joinToString("|").lowercase()
+    }
 
     private fun List<LrcLibLyrics>.bestMatch(
         album: String?,
@@ -74,5 +98,9 @@ suspend fun fetchSong(artist: String, title: String, album: String?): LyricsResu
         !syncedLyrics.isNullOrBlank() -> LyricsResult.Synced(LrcParser.parse(syncedLyrics))
         !plainLyrics.isNullOrBlank() -> LyricsResult.Plain(plainLyrics)
         else -> LyricsResult.NotFound
+    }
+
+    private companion object {
+        const val TAG = "LyricsCache"
     }
 }
