@@ -116,18 +116,27 @@ class PlayerViewModel @Inject constructor(
 
     fun retryLyrics() {
         val song = playbackController.currentSong.value ?: return
-        viewModelScope.launch { fetchLyrics(song) }
+        viewModelScope.launch { fetchLyrics(song, showLoading = true) }
     }
 
-    private suspend fun fetchLyrics(song: Song) {
-        _lyrics.value = LyricsUiState.Loading
-        _lyrics.value = withContext(Dispatchers.IO) {
-            when (val result = lyricsRepository.fetchSong(song.artist, song.title, song.album)) {
+    private var hasLoadedLyrics = false
+
+    private suspend fun fetchLyrics(song: Song, showLoading: Boolean = false) {
+        if (showLoading || !hasLoadedLyrics) {
+            _lyrics.value = LyricsUiState.Loading
+        }
+        val result = withContext(Dispatchers.IO) {
+            when (val response = lyricsRepository.fetchSong(song.artist, song.title, song.album)) {
                 LyricsResult.NotFound -> LyricsUiState.NotFound
                 LyricsResult.Instrumental -> LyricsUiState.Instrumental
-                is LyricsResult.Plain -> LyricsUiState.Plain(result.text)
-                is LyricsResult.Synced -> LyricsUiState.Synced(result.lines)
+                is LyricsResult.Plain -> LyricsUiState.Plain(response.text)
+                is LyricsResult.Synced -> LyricsUiState.Synced(response.lines)
             }
+        }
+        if (song == playbackController.currentSong.value) {
+            _lyrics.value = result
+            hasLoadedLyrics = true
         }
     }
 }
+
