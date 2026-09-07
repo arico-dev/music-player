@@ -13,6 +13,7 @@ import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.local.dao.SongDao
 import com.musicplayer.app.data.local.entity.SongEntity
 import com.musicplayer.app.data.recents.RecentStore
+import com.musicplayer.app.data.usage.UsageStore
 import com.musicplayer.app.feature.widget.MusicWidget
 import com.musicplayer.app.feature.widget.SessionState
 import com.musicplayer.app.feature.widget.SessionStateStore
@@ -25,6 +26,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -76,20 +79,35 @@ class PlaybackController @Inject constructor(
     private var queueAppliedToPlayer = false
     private val restoreActions = ArrayDeque<() -> Unit>()
 
+    /** Milisegundos reproducidos pendientes de volcar a [UsageStore]. */
+    private var pendingListeningMs = 0L
+
     init {
-        // Alimenta el historial de "Escuchados recientemente" cada vez que cambia la canción.
+        // Alimenta "Escuchados recientemente" y el conteo de reproducciones cuando una
+        // canción empieza a sonar (currentSong cambia con isPlaying = true).
         widgetScope.launch {
-            _currentSong.drop(1).collect { song ->
-                song?.let { RecentStore.addOrMoveTop(context, it.id) }
-            }
+            combine(_currentSong.drop(1), _isPlaying) { song, playing -> song to playing }
+                .distinctUntilChanged()
+                .collect { (song, playing) ->
+                    if (playing && song != null) {
+                        RecentStore.addOrMoveTop(context, song.id)
+                        UsageStore.recordPlay(context, song.id)
+                    }
+                }
         }
 
-        // Guarda la posición periódicamente mientras suena, para reanudar fielmente en frío.
+        // Guarda la posición y el tiempo de escucha periódicamente mientras suena.
         widgetScope.launch {
             while (true) {
                 delay(5_000)
                 if (_isPlaying.value) {
+                    pendingListeningMs += 5_000
                     mainHandler.post { persistSession(_currentIndex.value, readCurrentPosition()) }
+                    if (pendingListeningMs >= 60_000) {
+                        val toFlush = pendingListeningMs
+                        pendingListeningMs = 0
+                        UsageStore.recordListening(context, toFlush)
+                    }
                 }
             }
         }
@@ -115,6 +133,7 @@ class PlaybackController @Inject constructor(
         refreshWidget()
         if (!isPlaying) {
             persistSession(_currentIndex.value, currentPosition())
+            flushPendingListening()
         }
     }
 
@@ -125,6 +144,15 @@ class PlaybackController @Inject constructor(
         queueAppliedToPlayer = false
         restoreActions.clear()
         persistSession(_currentIndex.value, readCurrentPosition())
+        flushPendingListening()
+    }
+
+    /** Volca a [UsageStore] los milisegundos escuchados aún no persistidos. */
+    private fun flushPendingListening() {
+        val toFlush = pendingListeningMs
+        if (toFlush <= 0) return
+        pendingListeningMs = 0
+        widgetScope.launch { UsageStore.recordListening(context, toFlush) }
     }
 
     /**
