@@ -30,6 +30,34 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Widget de pantalla de inicio -->
+        <receiver
+            android:name=".feature.widget.MusicWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/music_widget_info" />
+        </receiver>
+
+        <!-- Reproducción en segundo plano (host del ExoPlayer + MediaSession) -->
+        <service
+            android:name=".player.MediaPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
+        <!-- Acciones de los botones del widget -->
+        <receiver
+            android:name=".feature.widget.MusicWidgetActionReceiver"
+            android:exported="true" />
     </application>
 
 </manifest>

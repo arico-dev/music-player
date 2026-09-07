@@ -21,6 +21,9 @@ interface SongDao {
     @Query("SELECT * FROM songs")
     suspend fun getAll(): List<SongEntity>
 
+    @Query("SELECT * FROM songs WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<SongEntity>
+
     @Query("SELECT COUNT(*) FROM songs")
     suspend fun count(): Int
 

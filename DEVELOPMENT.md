@@ -43,7 +43,7 @@ app/src/main/java/com/musicplayer/app/
 │   ├── player/                PlayerScreen + PlayerViewModel (reproductor + letras)
 │   ├── search/                SearchScreen + SearchViewModel (búsqueda local)
 │   └── settings/              SettingsScreen
-├── player/                    PlaybackController (MediaSession + ExoPlayer, cola, estados)
+├── player/                    PlaybackController (fachada sobre el player del MediaPlaybackService)
 └── ui/theme/                  Color.kt, Theme.kt, Type.kt
 ```
 
@@ -104,6 +104,15 @@ Notas prácticas:
 - `artistId` = `hashCode()` del nombre del artista; `albumId` proviene de MediaStore.
 
 
+## Feature: Widget de pantalla de inicio (Glance 1.2.0)
+
+- `MusicWidget` (GlanceAppWidget) + `MusicWidgetReceiver` (GlanceAppWidgetReceiver, autoconfigurado) + `MusicWidgetActionReceiver` (taps → controller) + `MusicWidgetInfo.xml` (4x1: min 4x1; la info en `dumpsys appwidget` sale como `min=(46081x25601)`).
+- **Los botones** lanzan broadcasts explícitos al `MusicWidgetActionReceiver` (EXTRA `com.musicplayer.app.widget.action` = toggle/next/previous); el receiver inyecta `PlaybackController` (el receiver es `exported=true`, convención para widget actions).
+- **Render fiable**: `provideGlance` carga el estado inicial (`WidgetStateStore.load`) y la composición **observa** `WidgetStateStore.flow(context)` con `collectAsState(initial)`, y la carátula con `produceState` (decodificando `android.graphics.Bitmap` con fallback a `ic_widget_music_note`). Esto es obligatorio porque `updateAll()` NO re-entra en `provideGlance` si la sesión ya está activa — solo recomponerse.
+- **`LocalContext` debe ser `androidx.glance.LocalContext`**; el de `compose.ui.platform` no está provisto en Glance y la composición lanza (widget muestra "No se puede mostrar el contenido").
+- **Reproductor en frío**: `MediaPlaybackService : MediaSessionService` (foreground `mediaPlayback`) crea el `ExoPlayer` y expone `playerInstance` como singleton del proceso (sin binder). `PlaybackController.ensurePlayer()` → `startForegroundService` (permite HyperOS) + `waitForPlayer()` (poll 60ms) + `pendingAction`. La **sesión se persiste** en `SessionStateStore` (ids de la cola + índice + posición, DataStore compartido `music_widget`) en playSongs/transición/pausa/`onServiceDestroyed` y cada 5s mientras suena; en frío se **restaura antes de la primera acción** (`applySessionToPlayer`, reaplicando la cola también si el proceso sobrevivió al servicio).
+- **ExoPlayer solo desde main**: todo acceso pasa por `runOnMain`/`runOnMainBlocking` (`Player is accessed on the wrong thread` si se toca desde el ticker de posición o el receiver en otro hilo).
+
 ## Feature: Letras sincronizadas (LRCLIB)
 
 - Base URL: `https://lrclib.net/`. Retrofit + OkHttp en `di/AppModule`.
@@ -133,6 +142,7 @@ Notas prácticas:
 
 ## Gotchas de arquitectura (no volver a caer)
 
+- **Glance: NO soporta colores dinámicos (runtime) en tintes/backgrounds de vistas widget**. Los `ColorProvider(Color(...))` deben ser constantes de compilación (el plugin de Glance los registra como recursos). Pasar un color calculado en runtime (p. ej. el dominante del cover) hace que el launcher lo tome como resource id (`Resources$NotFoundException: Resource ID #0xff...` → "no se puede cargar el widget"). Solución usada: el cover se usa como **imagen de fondo** (`background(imageProvider, alpha = 0.5f)`) en vez de extraer su color.
 - **Tab activo de Biblioteca**: guardado en `LibraryViewModel` como `StateFlow` (`selectTab`). Un `rememberSaveable` local se pierde al navegar al detalle y volver → reseteaba a "Canciones".
 - **Grid de álbumes**: `BoxWithConstraints`; 2 columnas (<620dp), 3 (620–899), 4 (>=900dp). Los covers se vuelven gigantes si se fija `GridCells.Fixed(2)` en horizontal.
 - **Header de detalle**: en `>=900dp` es una fila cover 180dp + título; en vertical es columna al 70% de ancho. Un cover demasiado grande empuja las canciones fuera de pantalla en landscape y parece que no hay resultados.
