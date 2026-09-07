@@ -16,8 +16,10 @@ import com.musicplayer.app.data.local.entity.GenreEntity
 import com.musicplayer.app.data.local.entity.SongEntity
 import com.musicplayer.app.data.local.entity.SongGenreEntity
 import com.musicplayer.app.data.mediastore.MediaStoreScanner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -81,7 +83,11 @@ class LibraryRepository @Inject constructor(
             list.filter { it.folderPath == path }.sortedBy { it.title.lowercase() }
         }
 
-    suspend fun refresh() {
+    suspend fun refresh() = withContext(Dispatchers.IO) {
+        if (mediaStoreScanner.shouldSkipRescan()) {
+            return@withContext
+        }
+
         val songScans = mediaStoreScanner.scanSongs()
         val songs = songScans.map { it.song }
         val albums = mediaStoreScanner.scanAlbums()
@@ -143,6 +149,8 @@ class LibraryRepository @Inject constructor(
         if (existingIds.isNotEmpty()) {
             songDao.deleteNotIn(existingIds)
         }
+
+        mediaStoreScanner.markScanned()
     }
 
     suspend fun isEmpty(): Boolean = songDao.count() == 0

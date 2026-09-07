@@ -24,7 +24,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class LibraryUiState(
-    val isLoading: Boolean = true,
+    val isLoading: Boolean = false,
     val hasPermission: Boolean = false
 )
 
@@ -82,8 +82,9 @@ class LibraryViewModel @Inject constructor(
 
     fun loadLibrary() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            repository.refresh()
+            val hasCachedData = withContext(Dispatchers.IO) { !repository.isEmpty() }
+            _uiState.value = _uiState.value.copy(isLoading = !hasCachedData)
+            withContext(Dispatchers.IO) { repository.refresh() }
             _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }

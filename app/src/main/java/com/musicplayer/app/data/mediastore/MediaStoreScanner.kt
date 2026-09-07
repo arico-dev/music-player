@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,6 +18,45 @@ class MediaStoreScanner @Inject constructor(
 
     private val contentResolver = context.contentResolver
     private val tagReader = TagReader()
+
+    private val prefs = context.getSharedPreferences("library_scan", Context.MODE_PRIVATE)
+
+    private companion object {
+        const val KEY_FINGERPRINT = "media_fingerprint"
+    }
+
+    /** Huella ligera de la biblioteca (id y fecha de modificación por canción). */
+    fun fingerprint(): String {
+        val md = MessageDigest.getInstance("MD5")
+        contentResolver.query(
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            arrayOf(MediaStore.Audio.Media._ID, MediaStore.Audio.Media.DATE_MODIFIED),
+            "${MediaStore.Audio.Media.IS_MUSIC} != 0",
+            null,
+            null
+        )?.use { cursor ->
+            val idCol = cursor.getColumnIndex(MediaStore.Audio.Media._ID)
+            val modifiedCol = cursor.getColumnIndex(MediaStore.Audio.Media.DATE_MODIFIED)
+            while (cursor.moveToNext()) {
+                if (idCol >= 0) md.update(cursor.getLong(idCol).toString().toByteArray())
+                md.update(':'.code.toByte())
+                if (modifiedCol >= 0) md.update(cursor.getLong(modifiedCol).toString().toByteArray())
+                md.update(';'.code.toByte())
+            }
+        }
+        return md.digest().toHex()
+    }
+
+    /** Devuelve true si la biblioteca de MediaStore no cambió desde el último escaneo. */
+    fun shouldSkipRescan(): Boolean {
+        val stored = prefs.getString(KEY_FINGERPRINT, null) ?: return false
+        return stored == fingerprint()
+    }
+
+    /** Marca el fingerprint actual como escaneado. */
+    fun markScanned() {
+        prefs.edit().putString(KEY_FINGERPRINT, fingerprint()).apply()
+    }
 
     fun scanSongs(): List<SongScan> {
         val projection = arrayOf(
@@ -170,6 +210,8 @@ data class GenreScan(
     val name: String,
     val songIds: List<Long>
 )
+
+private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
 data class SongScan(
     val song: Song,
