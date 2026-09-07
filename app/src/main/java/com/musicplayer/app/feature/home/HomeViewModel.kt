@@ -4,10 +4,14 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.data.local.dao.AlbumDao
 import com.musicplayer.app.data.local.dao.SongDao
 import com.musicplayer.app.data.local.entity.SongEntity
 import com.musicplayer.app.data.recents.RecentStore
+import com.musicplayer.app.data.usage.UsageData
+import com.musicplayer.app.data.usage.UsageStore
 import com.musicplayer.app.feature.widget.SessionState
 import com.musicplayer.app.feature.widget.SessionStateStore
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -32,8 +36,44 @@ data class ResumeEntry(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val songDao: SongDao
+    private val songDao: SongDao,
+    private val albumDao: AlbumDao
 ) : ViewModel() {
+
+    /** Snapshot de uso (tiempo total, por hora, conteos). */
+    val usage: StateFlow<UsageData> = UsageStore.flow(context)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UsageData())
+
+    /** Álbumes más escuchados (top 8 por suma de reproducciones de sus canciones). */
+    val topAlbums: StateFlow<List<Album>> = usage
+        .flatMapLatest { data ->
+            if (data.plays.isEmpty()) {
+                flowOf(emptyList())
+            } else {
+                flow { emit(computeTopAlbums(data)) }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Álbumes más escuchados (top 8 por suma de reproducciones de sus canciones). */
+    private suspend fun computeTopAlbums(data: UsageData): List<Album> {
+        if (data.plays.isEmpty()) return emptyList()
+        val songs = songDao.getByIds(data.plays.keys.toList())
+        val scoreByAlbum = HashMap<Long, Int>()
+        songs.forEach { song ->
+            val albumId = song.albumId
+            if (albumId > 0) {
+                scoreByAlbum[albumId] = (scoreByAlbum[albumId] ?: 0) + (data.plays[song.id] ?: 0)
+            }
+        }
+        val rankedIds = scoreByAlbum.entries
+            .sortedByDescending { it.value }
+            .take(8)
+            .map { it.key }
+        if (rankedIds.isEmpty()) return emptyList()
+        val byId = albumDao.getByIds(rankedIds).associateBy { it.id }
+        return rankedIds.mapNotNull { byId[it]?.toAlbum() }
+    }
 
     /** Historial de canción, resolviendo ids contra la biblioteca y descartando las borradas. */
     val recentSongs: StateFlow<List<Song>> = RecentStore.flow(context)
@@ -78,5 +118,13 @@ class HomeViewModel @Inject constructor(
         },
         trackNumber = trackNumber,
         albumId = albumId,
+    )
+
+    private fun com.musicplayer.app.data.local.entity.AlbumEntity.toAlbum() = Album(
+        id = id,
+        title = title,
+        artist = artist,
+        albumArtUri = Uri.parse("content://media/external/audio/albumart/$id"),
+        year = year,
     )
 }

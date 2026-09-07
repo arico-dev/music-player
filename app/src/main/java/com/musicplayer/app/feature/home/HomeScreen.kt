@@ -1,21 +1,27 @@
 package com.musicplayer.app.feature.home
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,14 +33,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
-import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.R
+import com.musicplayer.app.core.model.Album
+import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.data.usage.UsageData
+import com.musicplayer.app.feature.common.AlbumCard
+import java.time.LocalDateTime
 
 @Composable
 fun HomeScreen(
@@ -44,52 +55,147 @@ fun HomeScreen(
     currentSongId: Long? = null,
     onResumeSession: () -> Unit = {},
     onTogglePlayPause: () -> Unit = {},
-    onRecentSongClick: (Song) -> Unit = {}
+    onRecentSongClick: (Song) -> Unit = {},
+    onAlbumClick: (Album) -> Unit = {}
 ) {
     val recentSongs by viewModel.recentSongs.collectAsStateWithLifecycle()
     val resumeEntry by viewModel.resumeEntry.collectAsStateWithLifecycle()
+    val usage by viewModel.usage.collectAsStateWithLifecycle()
+    val topAlbums by viewModel.topAlbums.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
-    LazyColumn(modifier = modifier.fillMaxSize()) {
-        item(key = "title") {
-            Text(
-                text = stringResource(R.string.nav_home),
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 8.dp)
-            )
+    val now = LocalDateTime.now()
+
+    BoxWithConstraints(modifier = modifier) {
+        val columns = when {
+            maxWidth >= 900.dp -> 4
+            maxWidth >= 620.dp -> 3
+            else -> 2
         }
-        val resume = resumeEntry
-        if (resume != null) {
-            val trackingThis = isPlaying && resume.song.id == currentSongId
-            item(key = "resume") {
-                ResumeCard(
-                    song = resume.song,
-                    nowPlaying = trackingThis,
-                    onAction = if (trackingThis) onTogglePlayPause else onResumeSession
-                )
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(columns),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item(key = "greeting", span = { GridItemSpan(maxLineSpan) }) {
+                Greeting()
             }
-        }
-        item(key = "recents_title") {
-            Text(
-                text = stringResource(R.string.home_recents),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 4.dp)
-            )
-        }
-        if (recentSongs.isEmpty()) {
-            item(key = "empty") {
-                RecentsEmpty()
+            if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
+                item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
+                    StatsCard(usage = usage, now = now)
+                }
             }
-        } else {
-            items(recentSongs, key = { it.id }) { song ->
-                RecentRow(
-                    song = song,
-                    onClick = { onRecentSongClick(song) }
-                )
+            val resume = resumeEntry
+            if (resume != null) {
+                val trackingThis = isPlaying && resume.song.id == currentSongId
+                item(key = "resume", span = { GridItemSpan(maxLineSpan) }) {
+                    ResumeCard(
+                        song = resume.song,
+                        nowPlaying = trackingThis,
+                        onAction = if (trackingThis) onTogglePlayPause else onResumeSession
+                    )
+                }
+            }
+            if (topAlbums.isNotEmpty()) {
+                item(key = "albums_title", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionTitle(text = stringResource(R.string.home_top_albums))
+                }
+                items(topAlbums, key = { it.id }) { album ->
+                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                }
+            }
+            item(key = "recents_title", span = { GridItemSpan(maxLineSpan) }) {
+                SectionTitle(text = stringResource(R.string.home_recents))
+            }
+            if (recentSongs.isEmpty()) {
+                item(key = "empty", span = { GridItemSpan(maxLineSpan) }) {
+                    RecentsEmpty()
+                }
+            } else {
+                recentSongs.forEach { song ->
+                    item(key = "recent-${song.id}", span = { GridItemSpan(maxLineSpan) }) {
+                        RecentRow(
+                            song = song,
+                            onClick = { onRecentSongClick(song) }
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun Greeting() {
+    val now = LocalDateTime.now()
+    val greeting = when (now.hour) {
+        in 6 until 12 -> stringResource(R.string.home_greeting_morning)
+        in 12 until 20 -> stringResource(R.string.home_greeting_afternoon)
+        else -> stringResource(R.string.home_greeting_evening)
+    }
+    Text(
+        text = greeting,
+        style = MaterialTheme.typography.headlineSmall
+    )
+}
+
+@Composable
+private fun StatsCard(usage: UsageData, now: LocalDateTime) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.home_stats_title),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            StatRow(label = stringResource(R.string.home_stats_last_hour), amount = formatDuration(usage.lastHourMs(now)))
+            StatRow(label = stringResource(R.string.home_stats_today), amount = formatDuration(usage.todayMs(now)))
+            StatRow(label = stringResource(R.string.home_stats_month), amount = formatDuration(usage.monthMs(now)))
+            Spacer(modifier = Modifier.size(8.dp))
+            val playsText = pluralStringResource(
+                R.plurals.home_stat_replays, usage.totalPlays, usage.totalPlays
+            )
+            val songsText = pluralStringResource(
+                R.plurals.home_stat_songs, usage.distinctSongs, usage.distinctSongs
+            )
+            Text(
+                text = "$playsText en $songsText",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatRow(label: String, amount: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge
+        )
+        Text(
+            text = amount,
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium
+    )
 }
 
 @Composable
@@ -101,7 +207,6 @@ private fun ResumeCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp)
             .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onAction)
             .padding(12.dp),
@@ -149,7 +254,7 @@ private fun RecentRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(start = 16.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+            .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Artwork(song = song, size = 44.dp)
@@ -204,7 +309,7 @@ private fun RecentsEmpty() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 32.dp, vertical = 40.dp),
+            .padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -220,4 +325,11 @@ private fun RecentsEmpty() {
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+private fun formatDuration(ms: Long): String {
+    val totalMinutes = ms / 60_000
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    return if (hours > 0) "${hours} h ${minutes} min" else "${minutes} min"
 }

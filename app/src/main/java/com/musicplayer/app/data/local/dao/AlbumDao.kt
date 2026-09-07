@@ -15,6 +15,9 @@ interface AlbumDao {
     @Query("SELECT * FROM albums WHERE id = :id")
     fun observeById(id: Long): Flow<AlbumEntity?>
 
+    @Query("SELECT * FROM albums WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<Long>): List<AlbumEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(albums: List<AlbumEntity>)
 

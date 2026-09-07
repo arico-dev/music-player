@@ -141,6 +141,9 @@ fun MusicPlayerAppRoot() {
                     onRecentSongClick = { song ->
                         rootViewModel.playbackController.playSongs(listOf(song))
                         navController.navigate(Routes.PLAYER)
+                    },
+                    onAlbumClick = { album ->
+                        navController.navigate(Routes.albumRoute(album.id))
                     }
                 )
             }

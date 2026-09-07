@@ -19,6 +19,22 @@
     <string name="nav_settings">Ajustes</string>
 
     <!-- Home -->
+    <string name="home_greeting_morning">Buenos días</string>
+    <string name="home_greeting_afternoon">Buenas tardes</string>
+    <string name="home_greeting_evening">Buenas noches</string>
+    <string name="home_stats_title">Tus estadísticas</string>
+    <string name="home_stats_last_hour">Última hora</string>
+    <string name="home_stats_today">Hoy</string>
+    <string name="home_stats_month">Este mes</string>
+    <plurals name="home_stat_replays">
+        <item quantity="one">%d reproducción</item>
+        <item quantity="other">%d reproducciones</item>
+    </plurals>
+    <plurals name="home_stat_songs">
+        <item quantity="one">%d canción</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <string name="home_top_albums">Álbumes más escuchados</string>
     <string name="home_resume">Seguir escuchando</string>
     <string name="home_resume_play">Reanudar la última sesión</string>
     <string name="home_now_playing">En reproducción</string>

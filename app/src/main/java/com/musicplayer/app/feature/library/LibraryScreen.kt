@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Album
+import com.musicplayer.app.feature.common.AlbumCard
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
@@ -417,54 +418,6 @@ private fun AlbumGrid(
                 AlbumCard(album = album, onClick = { onAlbumClick(album) })
             }
         }
-    }
-}
-
-@Composable
-private fun AlbumCard(
-    album: Album,
-    onClick: () -> Unit
-) {
-    Column(modifier = Modifier.clickable(onClick = onClick)) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-        ) {
-            if (album.albumArtUri != null) {
-                AsyncImage(
-                    model = album.albumArtUri,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(32.dp)
-                )
-            }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = album.title,
-            style = MaterialTheme.typography.titleSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = album.artist,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
 
