@@ -13,6 +13,7 @@ Aplicación Android de reproducción de música local, escrita en **Kotlin + Jet
 | Imágenes | Coil `2.7.0` (con SVG) |
 | Red | Retrofit `2.11.0` + OkHttp `4.12.0` + kotlinx.serialization `1.9.0` |
 | Build | AGP `9.3.2`, Kotlin `2.2.10`, Gradle 9.5; `minSdk 30`, `targetSdk 36` |
+| Releases | `1.4.2` (205→207) — Ajustes, vacíos+a11y, seekbar expressive, pulidos, Home reorder, artista imagen, dedup álbum |
 
 ## Jerarquía de código
 
@@ -20,7 +21,7 @@ Aplicación Android de reproducción de música local, escrita en **Kotlin + Jet
 app/src/main/java/com/musicplayer/app/
 ├── MainActivity.kt            Entrada: crea el host de Hilt y setContent
 ├── MusicPlayerApp.kt          Application (Hilt)
-├── MusicPlayerAppRoot.kt      Navigation + Scaffold principal (bottom bar, miniplayer, rutas)
+├── MusicPlayerAppRoot.kt      Navigation + Scaffold principal (bottom bar, miniplayer, rutas) — start HOME
 ├── RootViewModel.kt           Acceso global al playbackController + color dominante
 ├── core/
 │   ├── model/                 Album, Song, SongMetadata, LrcLine
@@ -28,31 +29,36 @@ app/src/main/java/com/musicplayer/app/
 │   └── (la UI theme vive en ui/theme/)
 ├── data/
 │   ├── local/                 Room: MusicDatabase, Entities.kt (songs/albums/artists/genres/song_genres/playlists/playlist_songs)
-│   │   └── dao/               AlbumDao, ArtistDao, GenreDao, SongDao, SongGenreDao, PlaylistDao, PlaylistSongDao
-│   ├── mediastore/            MediaStoreScanner (sonidos/albumes/generos), MetadataReader y TagReader (tags FLAC/OGG/MP3/MP4)
-│   ├── lyrics/                LrcLibApi (Retrofit) + LyricsRepository (normalización y selección)
-│   ├── repository/            LibraryRepository (capa que combina Room + MediaStore)
-├── di/                        AppModule: Room, OkHttp/Retrofit (LRCLIB), JSON
+│   │   └── dao/               AlbumDao (observeByArtist), ArtistDao, GenreDao, SongDao, SongGenreDao, PlaylistDao, PlaylistSongDao
+│   ├── mediastore/            MediaStoreScanner (sonidos/albumes/generos), MetadataReader y TagReader (tags FLAC/OGG/MP3/MP4 + primary() feat)
+│   ├── lyrics/                LrcLibApi (Retrofit) + LyricsRepository
+│   ├── artist/                DeezerArtistApi + ArtistImageStore (DataStore) + ArtistImageRepository (LruCache+Deezer)
+│   ├── settings/              SettingsStore (theme + keepPlayingInBackground)
+│   ├── recents/               RecentStore (DataStore)
+│   ├── usage/                 UsageStore (buckets por hora)
+│   ├── repository/            LibraryRepository (dedup álbum por title|primaryArtist + Vol, remapeo albumId, lowercased artist)
+│   └── widget/                SessionStateStore + WidgetStateStore
+├── di/                        AppModule: Room, OkHttp/Retrofit (LRCLIB + Deezer), JSON
 ├── feature/
-│   ├── common/                SongInfoSheet (ficha técnica)
-│   ├── home/                  HomeScreen
-│   ├── library/               LibraryScreen + LibraryViewModel (tabs Canciones/Álbumes/Artistas/Géneros/Carpetas/Playlists),
-│   │                          PlaylistsList (+ picker de playlist) y PlaylistDetailScreen + PlaylistDetailViewModel
-│   │                          LibraryDetailScreen + LibraryDetailViewModel (detalle genérico)
-│   ├── miniplayer/            MiniPlayer (barra sobre el bottom bar)
-│   ├── player/                PlayerScreen + PlayerViewModel (reproductor + letras)
-│   ├── search/                SearchScreen + SearchViewModel (búsqueda local)
-│   └── settings/              SettingsScreen
-├── player/                    PlaybackController (fachada sobre el player del MediaPlaybackService)
+│   ├── common/                SongInfoSheet, AlbumCard
+│   ├── home/                  HomeScreen (greeting + resume arriba + stats + topAlbums + recents)
+│   ├── library/               LibraryScreen (ScrollableTabRow) + LibraryViewModel (artistImage + forceRefresh),
+│   │                          PlaylistsList (+ picker) y PlaylistDetailScreen + PlaylistDetailViewModel
+│   │                          LibraryDetailScreen + LibraryDetailViewModel (artist → grid álbumes, header con ArtistArtwork)
+│   ├── miniplayer/            MiniPlayer (a11y + AsyncImage)
+│   ├── player/                PlayerScreen + PlayerViewModel (SeekRow estable expressive, micro-pulidos)
+│   ├── search/                SearchScreen + SearchViewModel (EmptySearchState)
+│   └── settings/              SettingsScreen + SettingsViewModel (tema, keepPlaying, refresh, clear)
+├── player/                    PlaybackController + MediaPlaybackService (onTaskRemoved keepPlaying)
 └── ui/theme/                  Color.kt, Theme.kt, Type.kt
 ```
 
 ## Navegación (MusicPlayerAppRoot.kt)
 
-- Rutas: `home`, `library`, `search`, `settings`, `player`, y los detalles `album/{id}`, `artist/{id}`, `genre/{id}`, `folder?folderPath=...`, `playlist/{playlistId}`.
+- Rutas: `home`, `library`, `search`, `settings`, `player`, y los detalles `album/{id}`, `artist/{id}`, `genre/{id}`, `folder?folderPath=...`, `playlist/{playlistId}`. `startDestination = HOME` (1.4.2, antes LIBRARY).
 - `fullScreenRoutes` = `{PLAYER, ALBUM, ARTIST, GENRE, FOLDER, PLAYLIST}`; al estar en ellas se oculta bottom bar y miniplayer.
-- Un solo `LibraryDetailScreen` + `LibraryDetailViewModel` sirve a álbum/artista/género/carpeta (el argumento decide el filtro en el repositorio).
-- Cambio de tab inferior usa `popUpTo(startDestination){ saveState=true }` + `launchSingleTop` + `restoreState=true`.
+- `LibraryDetailScreen` para `artist` muestra **grid de álbumes** (2/3/4 cols) con `AlbumCard`; `album/genre/folder/playlist` muestran lista de canciones. `isArtist` decide.
+- Cambio de tab inferior usa `popUpTo(startDestination){ saveState=true }` + `launchSingleTop` + `restoreState=true`. `LibraryScreen` usa `PrimaryScrollableTabRow` (edge 0, maxLines 1) para 6 tabs en móvil.
 
 ## Workflow de build y despliegue
 
@@ -70,7 +76,7 @@ ADB=$HOME/Android/Sdk/platform-tools/adb
 $ADB install -r app/build/outputs/apk/release/app-release.apk
 ```
 
-Tablet de pruebas: **e29d45457d84**, 800x1340 px, densidad 213 (≈600x1005 dp). La build release no es debuggable (sin `run-as`): para inspeccionar la base Room hay que instalar la variante `debug`:
+Dispositivos de prueba: **e29d45457d84** tablet 800x1340 px, densidad 213 (≈600x1005 dp) + **ZY22M2PP4B** motorola edge 60 fusion 1220x2712 px (Music en `Descargas/Musica ` con espacio). La build release no es debuggable (sin `run-as`): para inspeccionar la base Room hay que instalar la variante `debug`:
 
 ```bash
 ./gradlew :app:installDebug
@@ -99,9 +105,10 @@ Notas prácticas:
 
 ## Datos y MediaStore
 
-- `MediaStoreScanner.scanSongs` filtra `IS_MUSIC != 0`; los álbumes/géneros se obtienen de sus URIs propias.
+- `MediaStoreScanner.scanSongs` filtra `IS_MUSIC != 0`; los álbumes/géneros se obtienen de sus URIs propias. `TagReader` lee FLAC/OGG/MP3/MP4 y `primary()` extrae artista principal cortando `; , / & +` y `feat/and/with/x/vs`.
+- **Fallback artista**: si `TagReader` no lee (ruta `Musica ` con espacio), `mediaArtist.cleanArtist()` aplica misma lógica para no duplicar `Bring Me The Horizon, Amy Lee`.
 - **Géneros**: en esta ROM (MIUI) `content://media/.../genres/<id>/members` reporta `_ID` = id del género, no el audio id. Por eso los miembros se reconstruyen a partir de la columna `GENRE` de la tabla de audio (agrupando por nombre normalizado). Usar siempre ese camino, no `Members`.
-- `artistId` = `hashCode()` del nombre del artista; `albumId` proviene de MediaStore.
+- `artistId` = `lowercase().hashCode()` del nombre primario (case-insensitive); `albumId` proviene de MediaStore pero se remapea si hay duplicado por `feat`.
 
 
 ## Feature: Widget de pantalla de inicio (Glance 1.2.0)
@@ -129,16 +136,27 @@ Notas prácticas:
 - `PlaylistSongDao.insertAll` usa `ON CONFLICT REPLACE`: re-agregar una canción ya presente la mueve al final (dedup de facto, comportamiento aceptado).
 - Orden por `position`; el reordenamiento reescribe toda la lista con posiciones consecutivas.
 
-## Metadata (artista principal / álbum)
+## Metadata (artista principal / álbum) + Dedup
 
-- MediaStore expone el ÚLTIMO artista de tags multi-artista (`ARTIST=Skrillex;Isoxo;Cristale;TeeZandos` → "TeeZandos"), seccionando álbumes a artistas fantasma. `TagReader` parsea la metadata del archivo y `primary()` = primer artista antes de `;`/`,`/`/`feat`.
-- `MediaStoreScanner.scanSongs` devuelve `SongScan(song, albumArtist)`; `LibraryRepository.refresh` deriva los artistas del artista corregido y el álbum del `album_artist` (mapa por albumId); `deleteNotIn`/`clear` limpian artistas/álbumes huérfanos.
+- MediaStore expone el ÚLTIMO artista de tags multi-artista (`ARTIST=Skrillex;Isoxo;Cristale;TeeZandos` → "TeeZandos"), seccionando álbumes a artistas fantasma. `TagReader` parsea la metadata y `primary()` = primer artista antes de `; , / & +` y `feat/and/with/x/vs`.
+- `MediaStoreScanner.scanSongs` devuelve `SongScan(song, albumArtist)`; `LibraryRepository.refresh` deriva artistas del primario `lowercase`, corrige `album` vía `albumArtist` por `albumId`, **deduplica** álbum lógico por `title|primaryArtist` lowercased (si `feat` creó 2 `albumId` para `POST HUMAN` → 1 canónico, `Vol.1/Vol.2` con distinta carátula no se fusiona), remapea `song.albumId` y usa `lowercase.hashCode` para `artistId/albumArtistId`; `deleteNotIn` limpia huérfanos. Single `ALBUM==TITLE` queda como single hasta retagear.
+- `LibraryDetail` para `artist` deriva `artistAlbums` desde `songs.groupBy(albumId)` para cubrir compilaciones (`Fred again..` vs `Latin Mafia`).
+
+## Feature: Imagen de artista (Deezer + caché)
+
+- `DeezerArtistApi` (`GET search/artist?q=`) + `ArtistImageStore` (`DataStore artist_images` JSON map `artistId→url`) + `ArtistImageRepository` (`LruCache 30` + fetch `picture_medium`/`big` con `firstOrNull name.equals`).
+- `LibraryDetailViewModel` expone `artistImageUrl` vía `header.collect` en `IO`; `LibraryDetailScreen` `ArtistArtwork` circular y `LibraryScreen` `ArtistRow` con `produceState` + `AsyncImage`. Requiere internet la 1ª vez por artista, luego disco Coil + `DataStore` offline.
+
+## Feature: Ajustes funcionales (1.4)
+
+- `SettingsStore` (`DataStore settings`): `themeMode` + `dynamicColor` (S+) + `keepPlayingInBackground` (default `false` → `onTaskRemoved` pausa `stopSelf`).
+- `SettingsScreen` con `PrimaryScrollableTabRow` en Biblioteca, `Switch` keepPlaying y `Actualizar biblioteca` force.
 
 ## Convenciones de trabajo
 
 - **Commits por feature**, mensajes en español, imperativo (`feat:`, `fix:`, `refactor:`).
 - Compilar siempre antes de commitear (`assembleRelease` verde).
-- `PENDIENTES.md` es local (gitignore) y sirve de hoja de ruta: siguientes pasos Widgets → Casting (+ letras planas con auto-scroll opcional).
+- `PENDIENTES.md` es local (gitignore) y sirve de hoja de ruta: specs 001-016 cerradas, casting aparcado por falta de dispositivo.
 
 ## Gotchas de arquitectura (no volver a caer)
 
