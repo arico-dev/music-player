@@ -84,14 +84,6 @@ fun HomeScreen(
             item(key = "greeting", span = { GridItemSpan(maxLineSpan) }) {
                 Greeting()
             }
-            if (topAlbums.isNotEmpty()) {
-                item(key = "albums_title", span = { GridItemSpan(maxLineSpan) }) {
-                    SectionTitle(text = stringResource(R.string.home_top_albums))
-                }
-                items(topAlbums, key = { it.id }) { album ->
-                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
-                }
-            }
             val resume = resumeEntry
             if (resume != null) {
                 val trackingThis = isPlaying && resume.song.id == currentSongId
@@ -106,6 +98,14 @@ fun HomeScreen(
             if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
                 item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
                     StatsCard(usage = usage, now = now)
+                }
+            }
+            if (topAlbums.isNotEmpty()) {
+                item(key = "albums_title", span = { GridItemSpan(maxLineSpan) }) {
+                    SectionTitle(text = stringResource(R.string.home_top_albums))
+                }
+                items(topAlbums, key = { it.id }) { album ->
+                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
                 }
             }
             item(key = "recents_title", span = { GridItemSpan(maxLineSpan) }) {
