@@ -49,7 +49,19 @@ class LibraryDetailViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val artistAlbums: StateFlow<List<com.musicplayer.app.core.model.Album>> = when {
-        artistId != null -> repository.albumsByArtist(artistId)
+        artistId != null -> songs.map { list ->
+            // Deriva álbumes desde las canciones del artista (cubre compilaciones donde album.artistId != artista)
+            list.groupBy { it.albumId }.mapNotNull { (albumId, group) ->
+                val first = group.firstOrNull() ?: return@mapNotNull null
+                com.musicplayer.app.core.model.Album(
+                    id = albumId ?: first.album.hashCode().toLong(),
+                    title = first.album,
+                    artist = first.artist,
+                    albumArtUri = first.albumArtUri,
+                    year = null
+                )
+            }.sortedBy { it.title.lowercase() }
+        }
         else -> MutableStateFlow(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

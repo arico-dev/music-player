@@ -107,7 +107,7 @@ class MediaStoreScanner @Inject constructor(
                         id = id,
                         title = tags.title?.takeIf { it.isNotBlank() }
                             ?: cursor.getString(titleCol) ?: "Unknown",
-                        artist = tags.primaryArtist ?: mediaArtist,
+                        artist = tags.primaryArtist ?: mediaArtist.cleanArtist(),
                         album = tags.album?.takeIf { it.isNotBlank() } ?: mediaAlbum,
                         durationMs = cursor.getLong(durationCol),
                         path = path,
@@ -217,3 +217,22 @@ data class SongScan(
     val song: Song,
     val albumArtist: String?
 )
+
+private val SCANNER_FEAT_REGEX = Regex("\\s+(ft\\.?|feat\\.?|featuring)\\b", RegexOption.IGNORE_CASE)
+
+private fun String.cleanArtist(): String {
+    var result = SCANNER_FEAT_REGEX.split(this).first().trim()
+    for (sep in charArrayOf(';', ',', '/', '&', '+')) {
+        val idx = result.indexOf(sep)
+        if (idx > 0) result = result.substring(0, idx)
+    }
+    val lower = result.lowercase()
+    for (kw in listOf(" and ", " with ", " vs ", " vs. ", " x ")) {
+        val idx = lower.indexOf(kw)
+        if (idx > 0) {
+            result = result.substring(0, idx).trim()
+            break
+        }
+    }
+    return result.trim().takeIf { it.isNotBlank() } ?: this.trim()
+}

@@ -29,14 +29,22 @@ class ArtistImageRepository @Inject constructor(
         return try {
             val clean = artistName.trim()
             if (clean.isEmpty()) return null
+            android.util.Log.d("ArtistImage", "fetching $clean")
             val response = api.searchArtist(clean)
+            android.util.Log.d("ArtistImage", "found ${response.data.size} for $clean")
             val best = response.data.firstOrNull { it.name.equals(clean, ignoreCase = true) }
                 ?: response.data.firstOrNull()
-                ?: return null
-            best.picture_medium?.takeIf { it.isNotBlank() }
+                ?: run {
+                    android.util.Log.d("ArtistImage", "no match for $clean")
+                    return null
+                }
+            val url = best.picture_medium?.takeIf { it.isNotBlank() }
                 ?: best.picture_big
                 ?: best.picture
-        } catch (_: Exception) {
+            android.util.Log.d("ArtistImage", "url for $clean -> $url")
+            url
+        } catch (e: Exception) {
+            android.util.Log.e("ArtistImage", "fetch failed $artistName", e)
             null
         }
     }

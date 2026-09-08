@@ -99,9 +99,10 @@ class LibraryRepository @Inject constructor(
         val genreEntities = genreScans.map { GenreEntity(id = it.id, name = it.name) }
 
         val artists = songs
-            .groupBy { it.artist }
-            .map { (name, group) ->
-                ArtistEntity(id = group.first().artist.hashCode().toLong(), name = name)
+            .groupBy { it.artist.lowercase() }
+            .map { (_, group) ->
+                val name = group.first().artist
+                ArtistEntity(id = name.lowercase().hashCode().toLong(), name = name)
             }
 
         val albumArtistByAlbumId = songScans
@@ -166,7 +167,7 @@ class LibraryRepository @Inject constructor(
 
         // Remove artists that no longer have songs on device
         if (songs.isNotEmpty()) {
-            val artistIds = songs.map { it.artist.hashCode().toLong() }.distinct()
+            val artistIds = songs.map { it.artist.lowercase().hashCode().toLong() }.distinct()
             artistDao.deleteNotIn(artistIds)
         }
 
@@ -193,7 +194,7 @@ class LibraryRepository @Inject constructor(
         id = id,
         title = title,
         artist = artist,
-        artistId = artist.hashCode().toLong(),
+        artistId = artist.lowercase().hashCode().toLong(),
         album = album,
         albumId = albumId ?: 0L,
         durationMs = durationMs,
@@ -228,7 +229,7 @@ class LibraryRepository @Inject constructor(
         id = id,
         title = title,
         artist = artist,
-        artistId = artist.hashCode().toLong(),
+        artistId = artist.lowercase().hashCode().toLong(),
         year = year
     )
 }
