@@ -1,5 +1,9 @@
 package com.musicplayer.app.feature.player
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -97,6 +101,9 @@ fun PlayerScreen(
     var showQueue by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
 
+    BackHandler(enabled = showQueue || showLyrics) {
+        if (showQueue) showQueue = false else if (showLyrics) showLyrics = false
+    }
     Box(modifier = Modifier.fillMaxSize()) {
         when {
             showQueue -> QueueSheet(
@@ -283,20 +290,31 @@ private fun SongTitleBlock(
     currentSong: Song?,
     onBase: Color
 ) {
-    Text(
-        text = currentSong?.title ?: "Nada sonando",
-        style = MaterialTheme.typography.headlineSmall,
-        color = onBase,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
-    Text(
-        text = currentSong?.artist ?: "",
-        style = MaterialTheme.typography.bodyLarge,
-        color = onBase.copy(alpha = 0.8f),
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis
-    )
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.animateContentSize()
+    ) {
+        AnimatedContent(targetState = currentSong?.title ?: "Nada sonando", label = "title") { title ->
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = onBase,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+        AnimatedContent(targetState = currentSong?.artist ?: "", label = "artist") { artist ->
+            Text(
+                text = artist,
+                style = MaterialTheme.typography.bodyLarge,
+                color = onBase.copy(alpha = 0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+        }
+    }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
@@ -389,13 +407,13 @@ private fun PlayerControlsRow(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-IconButton(onClick = onToggleShuffle) {
-                    Icon(
-                        imageVector = Icons.Filled.Shuffle,
-                        contentDescription = if (isShuffled) "Aleatorio activado" else "Aleatorio",
-                        tint = if (isShuffled) Color.White else onBase.copy(alpha = 0.7f)
-                    )
-                }
+        IconButton(onClick = onToggleShuffle, modifier = Modifier.size(48.dp)) {
+            Icon(
+                imageVector = Icons.Filled.Shuffle,
+                contentDescription = if (isShuffled) "Aleatorio activado" else "Aleatorio",
+                tint = if (isShuffled) Color.White else onBase.copy(alpha = 0.7f)
+            )
+        }
         IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
             Icon(
                 imageVector = Icons.Filled.SkipPrevious,
@@ -426,7 +444,7 @@ IconButton(onClick = onToggleShuffle) {
                 modifier = Modifier.size(40.dp)
             )
         }
-        IconButton(onClick = onCycleRepeat) {
+        IconButton(onClick = onCycleRepeat, modifier = Modifier.size(48.dp)) {
             val repeatDesc = when (repeatMode) {
                 Player.REPEAT_MODE_ONE -> "Repetir una canción"
                 Player.REPEAT_MODE_ALL -> "Repetir todo"
@@ -480,12 +498,13 @@ private fun ActionChip(
         modifier = Modifier
             .clip(RoundedCornerShape(20.dp))
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .height(36.dp)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = text,
             tint = onBase.copy(alpha = 0.8f)
         )
         Spacer(modifier = Modifier.size(6.dp))
@@ -508,22 +527,24 @@ private fun AlbumArt(
             .clip(RoundedCornerShape(20.dp))
             .background(onBase.copy(alpha = 0.15f))
     ) {
-        if (artUri != null) {
-            Image(
-                painter = rememberAsyncImagePainter(artUri),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Filled.MusicNote,
-                contentDescription = null,
-                tint = onBase.copy(alpha = 0.4f),
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(72.dp)
-            )
+        Crossfade(targetState = artUri, label = "albumArt") { uri ->
+            if (uri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(uri),
+                    contentDescription = stringResource(R.string.a11y_album_art),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.MusicNote,
+                    contentDescription = stringResource(R.string.a11y_album_art),
+                    tint = onBase.copy(alpha = 0.4f),
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .size(72.dp)
+                )
+            }
         }
     }
 }
