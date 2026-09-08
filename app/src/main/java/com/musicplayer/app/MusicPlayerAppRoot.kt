@@ -182,7 +182,8 @@ fun MusicPlayerAppRoot() {
             ) {
                 LibraryDetailScreen(
                     onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
+                    onSongClick = { navController.navigate(Routes.PLAYER) },
+                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) }
                 )
             }
             composable(

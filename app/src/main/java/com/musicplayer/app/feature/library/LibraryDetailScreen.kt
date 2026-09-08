@@ -38,21 +38,28 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import android.net.Uri
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.musicplayer.app.R
+import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.AlbumCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryDetailScreen(
     onBack: () -> Unit,
     onSongClick: () -> Unit = {},
+    onAlbumClick: (Album) -> Unit = {},
     viewModel: LibraryDetailViewModel = hiltViewModel()
 ) {
     val header by viewModel.header.collectAsStateWithLifecycle()
     val songs by viewModel.songs.collectAsStateWithLifecycle()
+    val artistAlbums by viewModel.artistAlbums.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -69,6 +76,51 @@ fun LibraryDetailScreen(
             )
         }
     ) { innerPadding ->
+        // Artist: muestra grid de álbumes, no canciones
+        if (viewModel.isArtist) {
+            if (artistAlbums.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.search_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                return@Scaffold
+            }
+            BoxWithConstraints(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {
+                val columns = when {
+                    maxWidth >= 900.dp -> 4
+                    maxWidth >= 620.dp -> 3
+                    else -> 2
+                }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(columns),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                        DetailHeader(header = header)
+                    }
+                    items(artistAlbums, key = { it.id }) { album ->
+                        AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                    }
+                }
+            }
+            return@Scaffold
+        }
+
         if (songs.isEmpty()) {
             Box(
                 modifier = Modifier

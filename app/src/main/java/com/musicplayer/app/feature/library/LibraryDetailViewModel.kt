@@ -34,11 +34,18 @@ class LibraryDetailViewModel @Inject constructor(
     private val genreId: Long? = savedStateHandle["genreId"]
     private val folderPath: String? = savedStateHandle["folderPath"]
 
+    val isArtist: Boolean = artistId != null
+
     val songs: StateFlow<List<Song>> = when {
         albumId != null -> repository.songsByAlbum(albumId)
         artistId != null -> repository.songsByArtist(artistId)
         genreId != null -> repository.songsByGenre(genreId)
         folderPath != null -> repository.songsByFolder(folderPath)
+        else -> MutableStateFlow(emptyList())
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val artistAlbums: StateFlow<List<com.musicplayer.app.core.model.Album>> = when {
+        artistId != null -> repository.albumsByArtist(artistId)
         else -> MutableStateFlow(emptyList())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 

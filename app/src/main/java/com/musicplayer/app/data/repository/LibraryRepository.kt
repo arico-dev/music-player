@@ -75,6 +75,9 @@ class LibraryRepository @Inject constructor(
     fun songsByArtist(artistId: Long): Flow<List<Song>> =
         songDao.observeByArtist(artistId).map { list -> list.map { it.toSong() } }
 
+    fun albumsByArtist(artistId: Long): Flow<List<Album>> =
+        albumDao.observeByArtist(artistId).map { list -> list.map { it.toAlbum() } }
+
     fun songsByGenre(genreId: Long): Flow<List<Song>> =
         songGenreDao.observeSongsByGenre(genreId).map { list -> list.map { it.toSong() } }
 
