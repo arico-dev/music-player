@@ -155,14 +155,14 @@ private fun DetailHeader(header: DetailHeader?) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 DetailArtwork(
                     artworkUri = header.artworkUri,
                     modifier = Modifier.fillMaxWidth(0.7f)
                 )
-                Spacer(modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.size(12.dp))
                 Text(
                     text = header.name,
                     style = MaterialTheme.typography.headlineSmall,
