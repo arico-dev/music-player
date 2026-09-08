@@ -26,6 +26,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -151,11 +152,11 @@ private fun StatsCard(usage: UsageData, now: LocalDateTime, genres: List<String>
                 text = stringResource(R.string.home_stats_title),
                 style = MaterialTheme.typography.titleMedium
             )
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(12.dp))
             StatRow(label = stringResource(R.string.home_stats_last_hour), amount = formatDuration(usage.lastHourMs(now)))
             StatRow(label = stringResource(R.string.home_stats_today), amount = formatDuration(usage.todayMs(now)))
             StatRow(label = stringResource(R.string.home_stats_month), amount = formatDuration(usage.monthMs(now)))
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(12.dp))
             val playsText = pluralStringResource(
                 R.plurals.home_stat_replays, usage.totalPlays, usage.totalPlays
             )
@@ -164,20 +165,20 @@ private fun StatsCard(usage: UsageData, now: LocalDateTime, genres: List<String>
             )
             Text(
                 text = "$playsText en $songsText",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             if (genres.isNotEmpty()) {
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(
                     text = stringResource(R.string.home_top_genres),
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(modifier = Modifier.size(6.dp))
+                Spacer(modifier = Modifier.size(4.dp))
                 Text(
                     text = genres.joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -191,16 +192,17 @@ private fun StatRow(label: String, amount: String) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge
+            style = MaterialTheme.typography.bodyMedium
         )
         Text(
             text = amount,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
