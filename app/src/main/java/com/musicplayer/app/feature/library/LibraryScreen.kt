@@ -193,12 +193,21 @@ private fun LibraryTabs(
     val tabs = LibraryTab.entries
 
     Column(modifier = modifier) {
-        PrimaryTabRow(selectedTabIndex = selectedTab.ordinal) {
+        androidx.compose.material3.PrimaryScrollableTabRow(
+            selectedTabIndex = selectedTab.ordinal,
+            edgePadding = 0.dp
+        ) {
             tabs.forEach { tab ->
                 Tab(
                     selected = selectedTab == tab,
                     onClick = { onSelectTab(tab) },
-                    text = { Text(stringResource(tab.labelRes)) }
+                    text = {
+                        Text(
+                            text = stringResource(tab.labelRes),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
                 )
             }
         }
