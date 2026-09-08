@@ -58,6 +58,13 @@ fun PlaylistList(
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                Icon(
+                    imageVector = Icons.Filled.LibraryMusic,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(56.dp)
+                )
+                Spacer(modifier = Modifier.size(16.dp))
                 Text(
                     text = stringResource(R.string.playlist_empty),
                     style = MaterialTheme.typography.bodyMedium,

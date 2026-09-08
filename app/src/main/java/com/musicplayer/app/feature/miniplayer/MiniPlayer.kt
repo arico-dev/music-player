@@ -31,8 +31,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
+import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.player.PlaybackController
 
@@ -113,16 +117,16 @@ private fun MiniPlayerContent(
                 .background(MaterialTheme.colorScheme.surface)
         ) {
             if (song.albumArtUri != null) {
-                Image(
-                    painter = rememberAsyncImagePainter(song.albumArtUri),
-                    contentDescription = null,
+                AsyncImage(
+                    model = song.albumArtUri,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.size(44.dp)
                 )
             } else {
                 Icon(
                     imageVector = Icons.Filled.MusicNote,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)

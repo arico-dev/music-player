@@ -336,42 +336,49 @@ private fun SeekRow(
         )
         val sliderValue = dragValue ?: position.toFloat().coerceIn(0f, duration.toFloat())
         val timeLabel = (dragValue?.toLong() ?: position)
-        Slider(
-            value = sliderValue,
-            onValueChange = {
-                dragValue = it
-                isDragging = true
-            },
-            onValueChangeFinished = {
-                dragValue?.let { onSeek(it.toLong()) }
-                dragValue = null
-                isDragging = false
-            },
-            valueRange = 0f..duration.toFloat(),
-            interactionSource = interactionSource,
-            colors = SliderDefaults.colors(
-                thumbColor = onBase,
-                activeTrackColor = onBase,
-                inactiveTrackColor = onBase.copy(alpha = 0.3f)
-            ),
-            thumb = {
-                SliderDefaults.Thumb(
-                    interactionSource = interactionSource,
-                    colors = SliderDefaults.colors(thumbColor = onBase),
-                    thumbSize = DpSize(thumbSize, thumbSize)
-                )
-            },
-            track = { sliderState ->
-                SliderDefaults.Track(
-                    sliderState = sliderState,
-                    colors = SliderDefaults.colors(
-                        activeTrackColor = onBase,
-                        inactiveTrackColor = onBase.copy(alpha = 0.3f)
-                    ),
-                    thumbTrackGapSize = 0.dp
-                )
-            }
-        )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Slider(
+                value = sliderValue,
+                onValueChange = {
+                    dragValue = it
+                    isDragging = true
+                },
+                onValueChangeFinished = {
+                    dragValue?.let { onSeek(it.toLong()) }
+                    dragValue = null
+                    isDragging = false
+                },
+                valueRange = 0f..duration.toFloat(),
+                interactionSource = interactionSource,
+                colors = SliderDefaults.colors(
+                    thumbColor = onBase,
+                    activeTrackColor = onBase,
+                    inactiveTrackColor = onBase.copy(alpha = 0.3f)
+                ),
+                thumb = {
+                    SliderDefaults.Thumb(
+                        interactionSource = interactionSource,
+                        colors = SliderDefaults.colors(thumbColor = onBase),
+                        thumbSize = DpSize(thumbSize, thumbSize)
+                    )
+                },
+                track = { sliderState ->
+                    SliderDefaults.Track(
+                        sliderState = sliderState,
+                        colors = SliderDefaults.colors(
+                            activeTrackColor = onBase,
+                            inactiveTrackColor = onBase.copy(alpha = 0.3f)
+                        ),
+                        thumbTrackGapSize = 0.dp
+                    )
+                }
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -408,11 +415,25 @@ private fun PlayerControlsRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onToggleShuffle, modifier = Modifier.size(48.dp)) {
-            Icon(
-                imageVector = Icons.Filled.Shuffle,
-                contentDescription = if (isShuffled) "Aleatorio activado" else "Aleatorio",
-                tint = if (isShuffled) Color.White else onBase.copy(alpha = 0.7f)
-            )
+            val shuffleTint = when {
+                isShuffled && onBase == Color.White -> MaterialTheme.colorScheme.primary
+                isShuffled -> onBase
+                else -> onBase.copy(alpha = 0.6f)
+            }
+            val shuffleBg = if (isShuffled && onBase == Color.White) Color.White.copy(alpha = 0.18f) else Color.Transparent
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(shuffleBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Shuffle,
+                    contentDescription = if (isShuffled) "Aleatorio activado" else "Aleatorio",
+                    tint = shuffleTint
+                )
+            }
         }
         IconButton(onClick = onPrevious, modifier = Modifier.size(56.dp)) {
             Icon(
@@ -450,11 +471,26 @@ private fun PlayerControlsRow(
                 Player.REPEAT_MODE_ALL -> "Repetir todo"
                 else -> "Repetir"
             }
-            Icon(
-                imageVector = if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                contentDescription = repeatDesc,
-                tint = if (repeatMode != 0) Color.White else onBase.copy(alpha = 0.7f)
-            )
+            val repeatActive = repeatMode != Player.REPEAT_MODE_OFF
+            val repeatTint = when {
+                repeatActive && onBase == Color.White -> MaterialTheme.colorScheme.primary
+                repeatActive -> onBase
+                else -> onBase.copy(alpha = 0.6f)
+            }
+            val repeatBg = if (repeatActive && onBase == Color.White) Color.White.copy(alpha = 0.18f) else Color.Transparent
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(repeatBg),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (repeatMode == Player.REPEAT_MODE_ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                    contentDescription = repeatDesc,
+                    tint = repeatTint
+                )
+            }
         }
     }
 }
