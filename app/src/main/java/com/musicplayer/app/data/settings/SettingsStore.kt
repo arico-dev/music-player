@@ -14,7 +14,8 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 data class SettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
-    val dynamicColor: Boolean = false
+    val dynamicColor: Boolean = false,
+    val keepPlayingInBackground: Boolean = false
 )
 
 internal val Context.settingsDataStore by preferencesDataStore(name = "settings")
@@ -23,13 +24,15 @@ object SettingsStore {
 
     private val KEY_THEME = stringPreferencesKey("theme_mode")
     private val KEY_DYNAMIC = booleanPreferencesKey("dynamic_color")
+    private val KEY_KEEP_PLAYING = booleanPreferencesKey("keep_playing_background")
 
     fun flow(context: Context): Flow<SettingsState> =
         context.settingsDataStore.data.map { prefs ->
             val rawTheme = prefs[KEY_THEME] ?: ThemeMode.SYSTEM.name
             val mode = runCatching { ThemeMode.valueOf(rawTheme) }.getOrDefault(ThemeMode.SYSTEM)
             val dynamic = prefs[KEY_DYNAMIC] ?: false
-            SettingsState(themeMode = mode, dynamicColor = dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            val keepPlaying = prefs[KEY_KEEP_PLAYING] ?: false
+            SettingsState(themeMode = mode, dynamicColor = dynamic && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S, keepPlayingInBackground = keepPlaying)
         }
 
     suspend fun current(context: Context): SettingsState = flow(context).first()
@@ -44,6 +47,12 @@ object SettingsStore {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
         context.settingsDataStore.edit { prefs ->
             prefs[KEY_DYNAMIC] = enabled
+        }
+    }
+
+    suspend fun setKeepPlayingInBackground(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { prefs ->
+            prefs[KEY_KEEP_PLAYING] = enabled
         }
     }
 }

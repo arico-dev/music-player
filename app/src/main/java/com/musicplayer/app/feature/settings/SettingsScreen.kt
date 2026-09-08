@@ -137,6 +137,32 @@ fun SettingsScreen(
             }
         }
 
+        // Reproducción
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(text = stringResource(R.string.settings_playback), style = MaterialTheme.typography.titleMedium)
+                Text(text = stringResource(R.string.settings_playback_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text(text = stringResource(R.string.settings_keep_playing), style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            text = stringResource(R.string.settings_keep_playing_desc),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.keepPlayingInBackground,
+                        onCheckedChange = viewModel::setKeepPlayingInBackground
+                    )
+                }
+            }
+        }
+
         // Datos
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

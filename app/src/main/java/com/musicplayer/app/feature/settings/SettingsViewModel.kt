@@ -41,6 +41,10 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { SettingsStore.setDynamicColor(context, enabled) }
     }
 
+    fun setKeepPlayingInBackground(enabled: Boolean) {
+        viewModelScope.launch { SettingsStore.setKeepPlayingInBackground(context, enabled) }
+    }
+
     fun refreshLibrary() {
         if (_isRefreshing.value) return
         viewModelScope.launch {

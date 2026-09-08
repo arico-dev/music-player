@@ -93,6 +93,22 @@ class MediaPlaybackService : MediaSessionService() {
         mediaSession
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        val keepPlaying = try {
+            kotlinx.coroutines.runBlocking {
+                com.musicplayer.app.data.settings.SettingsStore.current(this@MediaPlaybackService).keepPlayingInBackground
+            }
+        } catch (_: Exception) {
+            false
+        }
+        if (!keepPlaying) {
+            val p = MediaPlaybackService.playerInstance
+            try {
+                p?.pause()
+            } catch (_: Exception) {
+            }
+            stopSelf()
+            return
+        }
         val p = MediaPlaybackService.playerInstance
         if (p == null || !p.playWhenReady || p.mediaItemCount == 0) {
             stopSelf()

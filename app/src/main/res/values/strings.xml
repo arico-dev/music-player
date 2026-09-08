@@ -162,6 +162,10 @@
     <string name="settings_clear_confirm_message">Esta acción no se puede deshacer.</string>
     <string name="settings_clear_recents_done">Recientes borrados</string>
     <string name="settings_clear_usage_done">Estadísticas borradas</string>
+    <string name="settings_playback">Reproducción</string>
+    <string name="settings_playback_desc">Comportamiento al cerrar la app</string>
+    <string name="settings_keep_playing">Seguir en segundo plano</string>
+    <string name="settings_keep_playing_desc">Si está apagado, al cerrar la app se pausa automáticamente</string>
     <string name="settings_about">Acerca de</string>
     <string name="settings_version">Versión %1$s (%2$d)</string>
 </resources>
