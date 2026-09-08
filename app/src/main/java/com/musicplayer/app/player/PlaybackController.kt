@@ -414,6 +414,15 @@ class PlaybackController @Inject constructor(
     private fun Song.toMediaItem() = androidx.media3.common.MediaItem.Builder()
         .setUri(Uri.parse(path))
         .setMediaId(id.toString())
+        .setMediaMetadata(
+            androidx.media3.common.MediaMetadata.Builder()
+                .setTitle(title)
+                .setArtist(artist)
+                .setAlbumTitle(album)
+                .setArtworkUri(albumArtUri)
+                .setDurationMs(durationMs)
+                .build()
+        )
         .build()
 
     private fun SongEntity.toSong() = Song(

@@ -1,7 +1,9 @@
 package com.musicplayer.app.player
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.util.Log
@@ -36,6 +38,9 @@ class MediaPlaybackService : MediaSessionService() {
     @Inject
     lateinit var playbackController: PlaybackController
 
+    @Inject
+    lateinit var colorExtractor: com.musicplayer.app.core.util.AlbumArtColorExtractor
+
     private var mediaSession: MediaSession? = null
 
     override fun onCreate() {
@@ -57,12 +62,11 @@ class MediaPlaybackService : MediaSessionService() {
 
         val session = MediaSession.Builder(this, p)
             .setSessionActivity(
-                android.app.PendingIntent.getActivity(
+                PendingIntent.getActivity(
                     this,
                     0,
                     Intent(this, MainActivity::class.java),
-                    android.app.PendingIntent.FLAG_IMMUTABLE or
-                        android.app.PendingIntent.FLAG_UPDATE_CURRENT
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
             )
             .build()
@@ -78,12 +82,36 @@ class MediaPlaybackService : MediaSessionService() {
         })
 
         mediaSession = session
+        // IMPORTANTE: dar de alta la sesión en el servicio. Es lo que hace que el
+        // MediaNotificationManager interno cree su controller de notificación y empiece a
+        // vigilar la reproducción. Sin addSession(), shouldShowNotification() devuelve false
+        // y NO se publica la notificación MediaStyle (por eso solo quedaba la neutral).
+        addSession(session)
 
-        // Mantén el proceso en primer plano aunque aún no se esté reproduciendo;
-        // si no, startForegroundService() lanzaría ForegroundServiceDidNotStartInTime.
+        // Provider personalizado: controles MediaStyle + color dominante de la carátula.
+        setMediaNotificationProvider(
+            ColoredMediaNotificationProvider(
+                this,
+                CHANNEL_ID,
+                colorExtractor,
+            )
+        )
+
+        // Notificación "neutral" para cubrir el arranque en foreground sin música aún
+        // (startForegroundService() exige startForeground() a tiempo o crashea con
+        // ForegroundServiceDidNotStartInTimeException). En cuanto empieza a reproducir, el
+        // MediaNotificationManager la reemplaza por la MediaStyle con controles + carátula.
+        val neutral = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_widget_music_note)
+            .setOngoing(false)
+            .setContentTitle(getString(R.string.media_playback_notif_title))
+            .setContentText(getString(R.string.media_playback_notif_text))
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_TRANSPORT)
+            .build()
         startForeground(
             NOTIFICATION_ID,
-            buildNeutralNotification(),
+            neutral,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
         )
         Log.d(TAG, "Media service creado; player listo")
@@ -91,6 +119,18 @@ class MediaPlaybackService : MediaSessionService() {
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
         mediaSession
+
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            getString(R.string.media_playback_channel),
+            NotificationManager.IMPORTANCE_LOW
+        )
+        channel.description = getString(R.string.media_playback_channel_description)
+        channel.lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        ContextCompat.getSystemService(this, NotificationManager::class.java)
+            ?.createNotificationChannel(channel)
+    }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val keepPlaying = try {
@@ -123,29 +163,10 @@ class MediaPlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            CHANNEL_ID,
-            getString(R.string.media_playback_channel),
-            NotificationManager.IMPORTANCE_LOW
-        )
-        channel.description = getString(R.string.media_playback_channel_description)
-        ContextCompat.getSystemService(this, NotificationManager::class.java)
-            ?.createNotificationChannel(channel)
-    }
-
-    private fun buildNeutralNotification() = NotificationCompat.Builder(this, CHANNEL_ID)
-        .setContentTitle(getString(R.string.media_playback_notif_title))
-        .setContentText(getString(R.string.media_playback_notif_text))
-        .setSmallIcon(R.drawable.ic_widget_music_note)
-        .setOngoing(true)
-        .setCategory(NotificationCompat.CATEGORY_SERVICE)
-        .build()
-
     companion object {
         private const val TAG = "MediaPlaybackService"
-        private const val CHANNEL_ID = "media_playback"
         private const val NOTIFICATION_ID = 1001
+        private const val CHANNEL_ID = "media_playback"
 
         /** Referencia al reproductor en este proceso (mismo proceso que la app). */
         @Volatile

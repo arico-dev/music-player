@@ -20,6 +20,12 @@ class AlbumArtColorExtractor @Inject constructor(
 
     private val cache = LruCache<String, Int>(64)
 
+    /** Devuelve un color ya cacheador para la portada, o null si aún no se ha calculado. */
+    fun peekFromUri(uri: Uri?): Int? {
+        if (uri == null) return null
+        return cache.get(uri.toString())
+    }
+
     /** Devuelve el color dominante (fallback a null si no se puede derivar), fuera del hilo principal y con caché por portada. */
     suspend fun extractFromUri(uri: Uri?): Int? {
         if (uri == null) return null
