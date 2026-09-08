@@ -18,8 +18,8 @@ android {
         applicationId = "com.musicplayer.app"
         minSdk = 30
         targetSdk = 36
-        versionCode = 204
-        versionName = "1.3"
+        versionCode = 205
+        versionName = "1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
