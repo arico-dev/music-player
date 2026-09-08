@@ -60,6 +60,7 @@ fun LibraryDetailScreen(
     val header by viewModel.header.collectAsStateWithLifecycle()
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val artistAlbums by viewModel.artistAlbums.collectAsStateWithLifecycle()
+    val artistImageUrl by viewModel.artistImageUrl.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -111,7 +112,7 @@ fun LibraryDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                        DetailHeader(header = header)
+                        DetailHeader(header = header, artistImageUrl = artistImageUrl, isArtist = true)
                     }
                     items(artistAlbums, key = { it.id }) { album ->
                         AlbumCard(album = album, onClick = { onAlbumClick(album) })
@@ -144,7 +145,7 @@ fun LibraryDetailScreen(
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
             item {
-                DetailHeader(header = header)
+                DetailHeader(header = header, artistImageUrl = null, isArtist = false)
             }
             item {
                 Button(
@@ -170,7 +171,7 @@ fun LibraryDetailScreen(
 }
 
 @Composable
-private fun DetailHeader(header: DetailHeader?) {
+private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtist: Boolean) {
     if (header == null) return
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         if (maxWidth >= 900.dp) {
@@ -181,10 +182,14 @@ private fun DetailHeader(header: DetailHeader?) {
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                DetailArtwork(
-                    artworkUri = header.artworkUri,
-                    modifier = Modifier.size(180.dp)
-                )
+                if (isArtist) {
+                    ArtistArtwork(imageUrl = artistImageUrl, name = header.name, modifier = Modifier.size(180.dp))
+                } else {
+                    DetailArtwork(
+                        artworkUri = header.artworkUri,
+                        modifier = Modifier.size(180.dp)
+                    )
+                }
                 Spacer(modifier = Modifier.size(24.dp))
                 Column {
                     Text(
@@ -210,10 +215,14 @@ private fun DetailHeader(header: DetailHeader?) {
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                DetailArtwork(
-                    artworkUri = header.artworkUri,
-                    modifier = Modifier.fillMaxWidth(0.7f)
-                )
+                if (isArtist) {
+                    ArtistArtwork(imageUrl = artistImageUrl, name = header.name, modifier = Modifier.fillMaxWidth(0.6f))
+                } else {
+                    DetailArtwork(
+                        artworkUri = header.artworkUri,
+                        modifier = Modifier.fillMaxWidth(0.7f)
+                    )
+                }
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(
                     text = header.name,
@@ -260,6 +269,36 @@ private fun DetailArtwork(
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(48.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArtistArtwork(
+    imageUrl: String?,
+    name: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .aspectRatio(1f)
+            .clip(RoundedCornerShape(100.dp))
+            .background(MaterialTheme.colorScheme.primaryContainer)
+    ) {
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = stringResource(R.string.a11y_artist_avatar),
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            Text(
+                text = name.take(1).uppercase(),
+                style = MaterialTheme.typography.displayMedium,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.align(Alignment.Center)
             )
         }
     }

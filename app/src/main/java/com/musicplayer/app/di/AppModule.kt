@@ -94,4 +94,15 @@ object AppModule {
     @Provides
     @Singleton
     fun provideLrcLibApi(retrofit: Retrofit): LrcLibApi = retrofit.create(LrcLibApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideDeezerArtistApi(json: Json, client: OkHttpClient): com.musicplayer.app.data.artist.DeezerArtistApi {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.deezer.com/")
+            .client(client)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+        return retrofit.create(com.musicplayer.app.data.artist.DeezerArtistApi::class.java)
+    }
 }

@@ -5,15 +5,18 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.data.artist.ArtistImageRepository
 import com.musicplayer.app.data.repository.LibraryRepository
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class DetailHeader(
@@ -26,7 +29,8 @@ data class DetailHeader(
 class LibraryDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     repository: LibraryRepository,
-    private val playbackController: PlaybackController
+    private val playbackController: PlaybackController,
+    private val artistImageRepository: ArtistImageRepository
 ) : ViewModel() {
 
     private val albumId: Long? = savedStateHandle["albumId"]
@@ -86,6 +90,21 @@ class LibraryDetailViewModel @Inject constructor(
         }
         else -> MutableStateFlow(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    private val _artistImageUrl = MutableStateFlow<String?>(null)
+    val artistImageUrl: StateFlow<String?> = _artistImageUrl
+
+    init {
+        if (artistId != null) {
+            viewModelScope.launch(Dispatchers.IO) {
+                header.collect { h ->
+                    val name = h?.name ?: return@collect
+                    val url = artistImageRepository.imageUrl(artistId, name)
+                    if (url != null) _artistImageUrl.value = url
+                }
+            }
+        }
+    }
 
     fun play(song: Song) {
         val index = songs.value.indexOfFirst { it.id == song.id }.takeIf { it >= 0 } ?: 0
