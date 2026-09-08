@@ -44,6 +44,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.runtime.produceState
+import coil.compose.AsyncImage
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -462,8 +464,12 @@ private fun ArtistList(
 @Composable
 private fun ArtistRow(
     artist: Artist,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    viewModel: LibraryViewModel = hiltViewModel()
 ) {
+    val imageUrl by produceState<String?>(initialValue = null, artist.id) {
+        value = viewModel.getArtistImageUrl(artist)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -478,11 +484,20 @@ private fun ArtistRow(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = artist.name.take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = stringResource(R.string.a11y_artist_avatar),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    text = artist.name.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
         Spacer(modifier = Modifier.size(16.dp))
         Column(modifier = Modifier.weight(1f)) {
