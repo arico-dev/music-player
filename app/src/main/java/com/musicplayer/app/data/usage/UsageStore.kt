@@ -74,6 +74,10 @@ object UsageStore {
         }
     }
 
+    suspend fun clear(context: Context) {
+        context.usageDataStore.edit { prefs -> prefs.remove(KEY_DATA) }
+    }
+
     /** Acumula [ms] escuchados en la hora actual, recortando buckets antiguos. */
     suspend fun recordListening(context: Context, ms: Long) {
         if (ms <= 0) return

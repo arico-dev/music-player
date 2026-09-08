@@ -115,4 +115,31 @@
     <string name="search_empty">Sin resultados</string>
     <string name="search_hint">Buscar canciones, álbumes, artistas…</string>
     <string name="refresh_library">Actualizar biblioteca</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_appearance">Apariencia</string>
+    <string name="settings_appearance_desc">Tema y colores de la app</string>
+    <string name="settings_theme_system">Sistema</string>
+    <string name="settings_theme_light">Claro</string>
+    <string name="settings_theme_dark">Oscuro</string>
+    <string name="settings_dynamic_color">Colores dinámicos</string>
+    <string name="settings_dynamic_color_desc">Usa los colores del fondo (Android 12+)</string>
+    <string name="settings_dynamic_color_unavailable">No disponible en este dispositivo</string>
+    <string name="settings_library">Biblioteca</string>
+    <string name="settings_library_desc">Si agregaste música y no aparece, actualiza la biblioteca.</string>
+    <string name="settings_library_refresh">Actualizar biblioteca</string>
+    <string name="settings_library_refreshing">Actualizando…</string>
+    <string name="settings_library_done">Biblioteca actualizada</string>
+    <string name="settings_library_error">Error al actualizar</string>
+    <string name="settings_data">Datos</string>
+    <string name="settings_data_desc">Historial local de la app</string>
+    <string name="settings_clear_recents">Borrar recientes</string>
+    <string name="settings_clear_recents_desc">Elimina “Escuchados recientemente” del Inicio</string>
+    <string name="settings_clear_usage">Borrar estadísticas</string>
+    <string name="settings_clear_usage_desc">Reinicia tiempo escuchado y reproducciones</string>
+    <string name="settings_clear_confirm_title">¿Borrar?</string>
+    <string name="settings_clear_confirm_message">Esta acción no se puede deshacer.</string>
+    <string name="settings_about">Acerca de</string>
+    <string name="settings_version">Versión %1$s (%2$d)</string>
 </resources>

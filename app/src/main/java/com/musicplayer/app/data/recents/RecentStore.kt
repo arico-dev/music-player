@@ -37,6 +37,10 @@ object RecentStore {
         }
     }
 
+    suspend fun clear(context: Context) {
+        context.recentsDataStore.edit { prefs -> prefs.remove(KEY_IDS) }
+    }
+
     private fun encode(ids: List<Long>): String {
         val arr = JSONArray()
         ids.forEach(arr::put)

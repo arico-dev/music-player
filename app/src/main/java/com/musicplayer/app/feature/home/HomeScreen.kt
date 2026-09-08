@@ -105,7 +105,7 @@ fun HomeScreen(
             }
             if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
                 item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
-                    StatsCard(usage = usage, now = now, genres = topGenres)
+                    StatsCard(usage = usage, now = now)
                 }
             }
             item(key = "recents_title", span = { GridItemSpan(maxLineSpan) }) {

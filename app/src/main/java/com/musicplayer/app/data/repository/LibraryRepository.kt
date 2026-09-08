@@ -83,8 +83,8 @@ class LibraryRepository @Inject constructor(
             list.filter { it.folderPath == path }.sortedBy { it.title.lowercase() }
         }
 
-    suspend fun refresh() = withContext(Dispatchers.IO) {
-        if (mediaStoreScanner.shouldSkipRescan()) {
+    suspend fun refresh(force: Boolean = false) = withContext(Dispatchers.IO) {
+        if (!force && mediaStoreScanner.shouldSkipRescan()) {
             return@withContext
         }
 
