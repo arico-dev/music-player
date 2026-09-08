@@ -140,16 +140,20 @@ class MediaPlaybackService : MediaSessionService() {
         } catch (_: Exception) {
             false
         }
+        val p = MediaPlaybackService.playerInstance
         if (!keepPlaying) {
-            val p = MediaPlaybackService.playerInstance
+            // Cerrar la app con "reproducir en segundo plano" desactivado: hay que detener la
+            // reproducción de verdad (no solo pausar). Si solo pausamos, el MediaNotificationManager
+            // de Media3 mantiene la notificación publicada porque su shouldShowNotification()
+            // depende de que la cola (timeline) no esté vacía, y quedaría colgada sin sonido.
             try {
-                p?.pause()
+                p?.stop()
+                p?.clearMediaItems()
             } catch (_: Exception) {
             }
             stopSelf()
             return
         }
-        val p = MediaPlaybackService.playerInstance
         if (p == null || !p.playWhenReady || p.mediaItemCount == 0) {
             stopSelf()
         }
