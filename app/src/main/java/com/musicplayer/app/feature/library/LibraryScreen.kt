@@ -515,11 +515,6 @@ private fun ArtistRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = stringResource(R.string.a11y_artist_avatar),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
