@@ -117,8 +117,39 @@ class LibraryRepository @Inject constructor(
                 ?: album
         }
 
-        songDao.upsertAll(songs.map { it.toEntity() })
-        albumDao.upsertAll(albumsWithTags.map { it.toAlbumEntity() })
+        // Deduplicar álbumes lógicos con mismo título+artista primario (feat causa 2 albumId en MediaStore)
+        // Si el título contiene Vol/Vol./Volume/Part, no fusionar (Vol.1 vs Vol.2 con distinta carátula deben quedar separados)
+        val volPattern = Regex("""\b(vol\.?|volume|part)\b.*\d""", RegexOption.IGNORE_CASE)
+        val byKey = albumsWithTags.groupBy { a ->
+            val normalizedTitle = a.title.trim().lowercase()
+            val primaryArtist = a.artist.trim().lowercase()
+            "$normalizedTitle|$primaryArtist"
+        }
+        val albumIdRemap = mutableMapOf<Long, Long>()
+        val dedupedAlbums = mutableListOf<Album>()
+        byKey.forEach { (key, group) ->
+            if (group.size == 1) {
+                dedupedAlbums += group.first()
+            } else {
+                val isVolGroup = group.any { volPattern.containsMatchIn(it.title) }
+                if (isVolGroup) {
+                    dedupedAlbums += group
+                } else {
+                    val canonical = group.minByOrNull { it.id }!!
+                    dedupedAlbums += canonical
+                    group.filter { it.id != canonical.id }.forEach { dup ->
+                        albumIdRemap[dup.id] = canonical.id
+                    }
+                }
+            }
+        }
+        val remappedSongs = if (albumIdRemap.isEmpty()) songs else songs.map { s ->
+            val newId = s.albumId?.let { albumIdRemap[it] }
+            if (newId != null) s.copy(albumId = newId) else s
+        }
+
+        songDao.upsertAll(remappedSongs.map { it.toEntity() })
+        albumDao.upsertAll(dedupedAlbums.map { it.toAlbumEntity() })
         artistDao.upsertAll(artists)
         genreDao.upsertAll(genreEntities)
 
@@ -139,16 +170,16 @@ class LibraryRepository @Inject constructor(
             artistDao.deleteNotIn(artistIds)
         }
 
-        // Remove albums that no longer have songs on device
-        val existingAlbumIds = songs.mapNotNull { it.albumId }
+        // Remove albums that no longer have songs on device (usa ids remapeados)
+        val existingAlbumIds = remappedSongs.mapNotNull { it.albumId }
         if (existingAlbumIds.isNotEmpty()) {
-            albumDao.deleteNotIn(existingAlbumIds)
+            albumDao.deleteNotIn(existingAlbumIds.distinct())
         } else {
             albumDao.clear()
         }
 
         // Remove songs that no longer exist on device
-        val existingIds = songs.map { it.id }
+        val existingIds = remappedSongs.map { it.id }
         if (existingIds.isNotEmpty()) {
             songDao.deleteNotIn(existingIds)
         }
