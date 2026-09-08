@@ -112,9 +112,28 @@
 
     <!-- Empty states -->
     <string name="library_empty">Tu biblioteca está vacía.\nAgrega música a tu dispositivo y dale a actualizar.</string>
+    <string name="library_empty_songs_title">Sin canciones</string>
+    <string name="library_empty_songs_desc">Agrega música a tu dispositivo y actualiza la biblioteca para verla aquí.</string>
+    <string name="library_empty_albums_title">Sin álbumes</string>
+    <string name="library_empty_albums_desc">Los álbumes aparecerán cuando tengas canciones con etiquetas de álbum.</string>
+    <string name="library_empty_artists_title">Sin artistas</string>
+    <string name="library_empty_artists_desc">Los artistas aparecerán cuando escanees música etiquetada.</string>
+    <string name="library_empty_genres_title">Sin géneros</string>
+    <string name="library_empty_genres_desc">Los géneros se toman de las etiquetas de tus canciones.</string>
+    <string name="library_empty_folders_title">Sin carpetas</string>
+    <string name="library_empty_folders_desc">Las carpetas aparecen al tener canciones en el almacenamiento.</string>
     <string name="search_empty">Sin resultados</string>
+    <string name="search_empty_title">Sin resultados</string>
+    <string name="search_empty_subtitle">Prueba con otro término o revisa la ortografía.</string>
     <string name="search_hint">Buscar canciones, álbumes, artistas…</string>
+    <string name="search_hint_empty_title">Busca tu música</string>
     <string name="refresh_library">Actualizar biblioteca</string>
+    <!-- a11y -->
+    <string name="a11y_more_options">Más opciones</string>
+    <string name="a11y_album_art">Carátula del álbum</string>
+    <string name="a11y_artist_avatar">Avatar del artista</string>
+    <string name="a11y_genre_icon">Icono de género</string>
+    <string name="a11y_folder_icon">Icono de carpeta</string>
 
     <!-- Settings -->
     <string name="settings_title">Ajustes</string>

@@ -17,10 +17,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -75,10 +77,18 @@ fun SearchScreen(
 
         Box(modifier = Modifier.weight(1f)) {
             when {
-                query.isBlank() -> EmptyHint(stringResource(R.string.search_hint))
+                query.isBlank() -> EmptySearchState(
+                    icon = Icons.Filled.Search,
+                    title = stringResource(R.string.search_hint_empty_title),
+                    subtitle = stringResource(R.string.search_hint)
+                )
                 results.songs.isEmpty() &&
                     results.albums.isEmpty() &&
-                    results.artists.isEmpty() -> EmptyHint(stringResource(R.string.search_empty))
+                    results.artists.isEmpty() -> EmptySearchState(
+                    icon = Icons.Filled.Search,
+                    title = stringResource(R.string.search_empty_title),
+                    subtitle = stringResource(R.string.search_empty_subtitle)
+                )
                 else -> SearchResultsList(
                     results = results,
                     onSongClick = { song ->
@@ -170,14 +180,14 @@ private fun SongRow(
             if (song.albumArtUri != null) {
                 AsyncImage(
                     model = song.albumArtUri,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -205,7 +215,7 @@ private fun SongRow(
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_more_options),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -246,14 +256,14 @@ private fun AlbumRow(
             if (album.albumArtUri != null) {
                 Image(
                     painter = rememberAsyncImagePainter(album.albumArtUri),
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -323,19 +333,39 @@ private fun ArtistRow(
         }
         Icon(
             imageVector = Icons.Default.Person,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.a11y_artist_avatar),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
 
 @Composable
-private fun EmptyHint(text: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+private fun EmptySearchState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(text = title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = text,
+            text = subtitle,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
     }
 }

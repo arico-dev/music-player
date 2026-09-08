@@ -89,6 +89,14 @@ class LibraryViewModel @Inject constructor(
         }
     }
 
+    fun forceRefresh() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            withContext(Dispatchers.IO) { repository.refresh(force = true) }
+            _uiState.value = _uiState.value.copy(isLoading = false)
+        }
+    }
+
     fun createPlaylist(name: String) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return

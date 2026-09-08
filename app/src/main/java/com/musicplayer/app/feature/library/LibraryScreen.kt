@@ -26,11 +26,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -38,6 +40,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -290,7 +293,15 @@ private fun SongList(
     modifier: Modifier = Modifier
 ) {
     if (songs.isEmpty()) {
-        EmptyHint(modifier = modifier)
+        val vm: LibraryViewModel = hiltViewModel()
+        EmptyState(
+            icon = Icons.Filled.MusicNote,
+            title = stringResource(R.string.library_empty_songs_title),
+            subtitle = stringResource(R.string.library_empty_songs_desc),
+            actionLabel = stringResource(R.string.refresh_library),
+            onAction = vm::forceRefresh,
+            modifier = modifier
+        )
         return
     }
     LazyColumn(modifier = modifier) {
@@ -329,14 +340,14 @@ private fun SongRow(
             if (song.albumArtUri != null) {
                 AsyncImage(
                     model = song.albumArtUri,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             } else {
                 Icon(
                     imageVector = Icons.Default.MusicNote,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_album_art),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)
@@ -364,7 +375,7 @@ private fun SongRow(
             IconButton(onClick = { menuExpanded = true }) {
                 Icon(
                     imageVector = Icons.Filled.MoreVert,
-                    contentDescription = null,
+                    contentDescription = stringResource(R.string.a11y_more_options),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -398,7 +409,12 @@ private fun AlbumGrid(
     modifier: Modifier = Modifier
 ) {
     if (albums.isEmpty()) {
-        EmptyHint(modifier = modifier)
+        EmptyState(
+            icon = Icons.Filled.Album,
+            title = stringResource(R.string.library_empty_albums_title),
+            subtitle = stringResource(R.string.library_empty_albums_desc),
+            modifier = modifier
+        )
         return
     }
     BoxWithConstraints(modifier = modifier) {
@@ -428,7 +444,12 @@ private fun ArtistList(
     modifier: Modifier = Modifier
 ) {
     if (artists.isEmpty()) {
-        EmptyHint(modifier = modifier)
+        EmptyState(
+            icon = Icons.Filled.Person,
+            title = stringResource(R.string.library_empty_artists_title),
+            subtitle = stringResource(R.string.library_empty_artists_desc),
+            modifier = modifier
+        )
         return
     }
     LazyColumn(modifier = modifier) {
@@ -481,7 +502,7 @@ private fun ArtistRow(
         }
         Icon(
             imageVector = Icons.Default.Person,
-            contentDescription = null,
+            contentDescription = stringResource(R.string.a11y_artist_avatar),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -494,7 +515,12 @@ private fun GenreList(
     modifier: Modifier = Modifier
 ) {
     if (genres.isEmpty()) {
-        EmptyHint(modifier = modifier)
+        EmptyState(
+            icon = Icons.Filled.Audiotrack,
+            title = stringResource(R.string.library_empty_genres_title),
+            subtitle = stringResource(R.string.library_empty_genres_desc),
+            modifier = modifier
+        )
         return
     }
     LazyColumn(modifier = modifier) {
@@ -525,7 +551,7 @@ private fun GenreRow(
         ) {
             Icon(
                 imageVector = Icons.Default.Audiotrack,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_genre_icon),
                 tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
@@ -555,7 +581,12 @@ private fun FolderList(
     modifier: Modifier = Modifier
 ) {
     if (folders.isEmpty()) {
-        EmptyHint(modifier = modifier)
+        EmptyState(
+            icon = Icons.Filled.Folder,
+            title = stringResource(R.string.library_empty_folders_title),
+            subtitle = stringResource(R.string.library_empty_folders_desc),
+            modifier = modifier
+        )
         return
     }
     LazyColumn(modifier = modifier) {
@@ -586,7 +617,7 @@ private fun FolderRow(
         ) {
             Icon(
                 imageVector = Icons.Default.Folder,
-                contentDescription = null,
+                contentDescription = stringResource(R.string.a11y_folder_icon),
                 tint = MaterialTheme.colorScheme.onTertiaryContainer
             )
         }
@@ -610,12 +641,43 @@ private fun FolderRow(
 }
 
 @Composable
-private fun EmptyHint(modifier: Modifier = Modifier) {
-    Box(modifier = modifier, contentAlignment = Alignment.Center) {
-        Text(
-            text = stringResource(R.string.search_empty),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+private fun EmptyState(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(56.dp)
         )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+        if (actionLabel != null && onAction != null) {
+            Spacer(modifier = Modifier.height(20.dp))
+            OutlinedButton(onClick = onAction) { Text(actionLabel) }
+        }
     }
 }

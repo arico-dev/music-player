@@ -232,7 +232,7 @@ private fun BottomBar(
                 icon = {
                     Icon(
                         imageVector = tab.icon,
-                        contentDescription = null
+                        contentDescription = stringResource(tab.labelRes)
                     )
                 },
                 label = {
