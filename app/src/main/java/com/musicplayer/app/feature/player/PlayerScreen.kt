@@ -36,6 +36,9 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -47,6 +50,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.media3.common.Player
 import androidx.compose.material3.Text
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -295,6 +299,7 @@ private fun SongTitleBlock(
     )
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun SeekRow(
     position: Long,
@@ -303,22 +308,58 @@ private fun SeekRow(
     onBase: Color
 ) {
     if (duration > 0) {
+        var dragValue by remember { mutableStateOf<Float?>(null) }
+        var isDragging by remember { mutableStateOf(false) }
+        val interactionSource = remember { MutableInteractionSource() }
+        val thumbSize by animateDpAsState(
+            targetValue = if (isDragging) 26.dp else 18.dp,
+            animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+            label = "seekThumb"
+        )
+        val sliderValue = dragValue ?: position.toFloat().coerceIn(0f, duration.toFloat())
+        val timeLabel = (dragValue?.toLong() ?: position)
         Slider(
-            value = position.toFloat().coerceIn(0f, duration.toFloat()),
-            onValueChange = { onSeek(it.toLong()) },
+            value = sliderValue,
+            onValueChange = {
+                dragValue = it
+                isDragging = true
+            },
+            onValueChangeFinished = {
+                dragValue?.let { onSeek(it.toLong()) }
+                dragValue = null
+                isDragging = false
+            },
             valueRange = 0f..duration.toFloat(),
+            interactionSource = interactionSource,
             colors = SliderDefaults.colors(
                 thumbColor = onBase,
                 activeTrackColor = onBase,
                 inactiveTrackColor = onBase.copy(alpha = 0.3f)
-            )
+            ),
+            thumb = {
+                SliderDefaults.Thumb(
+                    interactionSource = interactionSource,
+                    colors = SliderDefaults.colors(thumbColor = onBase),
+                    thumbSize = DpSize(thumbSize, thumbSize)
+                )
+            },
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = onBase,
+                        inactiveTrackColor = onBase.copy(alpha = 0.3f)
+                    ),
+                    thumbTrackGapSize = 0.dp
+                )
+            }
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = formatTime(position),
+                text = formatTime(timeLabel),
                 style = MaterialTheme.typography.labelMedium,
                 color = onBase.copy(alpha = 0.8f)
             )
