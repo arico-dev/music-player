@@ -31,9 +31,17 @@ private val FEAT_REGEX = Regex("\\s+(ft\\.?|feat\\.?|featuring)\\b", RegexOption
 /** Toma el artista principal: primero de la lista, cortado en separadores o "feat". */
 fun List<String>.primary(): String? = firstOrNull { it.isNotBlank() }?.let { value ->
     var result = FEAT_REGEX.split(value).first().trim()
-    for (sep in charArrayOf(';', ',', '/')) {
+    for (sep in charArrayOf(';', ',', '/', '&', '+')) {
         val idx = result.indexOf(sep)
         if (idx > 0) result = result.substring(0, idx)
+    }
+    val lower = result.lowercase()
+    for (kw in listOf(" and ", " with ", " vs ", " vs. ", " x ")) {
+        val idx = lower.indexOf(kw)
+        if (idx > 0) {
+            result = result.substring(0, idx).trim()
+            break
+        }
     }
     result.trim().takeIf { it.isNotBlank() }
 }
