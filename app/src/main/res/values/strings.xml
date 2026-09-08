@@ -35,6 +35,7 @@
         <item quantity="other">%d canciones</item>
     </plurals>
     <string name="home_top_albums">Álbumes más escuchados</string>
+    <string name="home_top_genres">Géneros favoritos</string>
     <string name="home_resume">Seguir escuchando</string>
     <string name="home_resume_play">Reanudar la última sesión</string>
     <string name="home_now_playing">En reproducción</string>
@@ -159,6 +160,8 @@
     <string name="settings_clear_usage_desc">Reinicia tiempo escuchado y reproducciones</string>
     <string name="settings_clear_confirm_title">¿Borrar?</string>
     <string name="settings_clear_confirm_message">Esta acción no se puede deshacer.</string>
+    <string name="settings_clear_recents_done">Recientes borrados</string>
+    <string name="settings_clear_usage_done">Estadísticas borradas</string>
     <string name="settings_about">Acerca de</string>
     <string name="settings_version">Versión %1$s (%2$d)</string>
 </resources>

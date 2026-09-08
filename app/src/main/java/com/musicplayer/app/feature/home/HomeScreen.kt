@@ -97,7 +97,7 @@ fun HomeScreen(
             }
             if (usage.totalPlayedMs > 0L || usage.totalPlays > 0) {
                 item(key = "stats", span = { GridItemSpan(maxLineSpan) }) {
-                    StatsCard(usage = usage, now = now)
+                    StatsCard(usage = usage, now = now, genres = topGenres)
                 }
             }
             if (topAlbums.isNotEmpty()) {
@@ -144,7 +144,7 @@ private fun Greeting() {
 }
 
 @Composable
-private fun StatsCard(usage: UsageData, now: LocalDateTime) {
+private fun StatsCard(usage: UsageData, now: LocalDateTime, genres: List<String> = emptyList()) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -167,6 +167,20 @@ private fun StatsCard(usage: UsageData, now: LocalDateTime) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (genres.isNotEmpty()) {
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    text = stringResource(R.string.home_top_genres),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.size(6.dp))
+                Text(
+                    text = genres.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

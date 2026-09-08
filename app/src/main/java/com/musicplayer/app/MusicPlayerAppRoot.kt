@@ -120,7 +120,7 @@ fun MusicPlayerAppRoot() {
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.LIBRARY,
+            startDestination = Routes.HOME,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)

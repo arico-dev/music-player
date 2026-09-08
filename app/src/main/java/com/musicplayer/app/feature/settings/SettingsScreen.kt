@@ -28,7 +28,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,6 +51,7 @@ fun SettingsScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val refreshMessage by viewModel.refreshMessage.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
     var confirmRecents by remember { mutableStateOf(false) }
@@ -177,7 +180,11 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = { confirmRecents = false; viewModel.clearRecents() }) { Text(stringResource(R.string.playlist_confirm)) }
+                TextButton(onClick = {
+                    confirmRecents = false
+                    viewModel.clearRecents()
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.settings_clear_recents_done)) }
+                }) { Text(stringResource(R.string.playlist_confirm)) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmRecents = false }) { Text(stringResource(R.string.playlist_cancel)) }
@@ -190,7 +197,11 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.settings_clear_confirm_title)) },
             text = { Text(stringResource(R.string.settings_clear_confirm_message)) },
             confirmButton = {
-                TextButton(onClick = { confirmUsage = false; viewModel.clearUsage() }) { Text(stringResource(R.string.playlist_confirm)) }
+                TextButton(onClick = {
+                    confirmUsage = false
+                    viewModel.clearUsage()
+                    scope.launch { snackbarHostState.showSnackbar(context.getString(R.string.settings_clear_usage_done)) }
+                }) { Text(stringResource(R.string.playlist_confirm)) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmUsage = false }) { Text(stringResource(R.string.playlist_cancel)) }
