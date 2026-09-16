@@ -114,6 +114,16 @@ fun LibraryDetailScreen(
                     item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
                         DetailHeader(header = header, artistImageUrl = artistImageUrl, isArtist = true)
                     }
+                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                        Button(
+                            onClick = { viewModel.playFrom(0) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Text(stringResource(R.string.play))
+                        }
+                    }
                     items(artistAlbums, key = { it.id }) { album ->
                         AlbumCard(album = album, onClick = { onAlbumClick(album) })
                     }
