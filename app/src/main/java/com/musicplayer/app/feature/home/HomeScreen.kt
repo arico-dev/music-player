@@ -20,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.foundation.background
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -149,7 +152,10 @@ private fun Greeting() {
 
 @Composable
 private fun StatsCard(usage: UsageData, now: LocalDateTime, genres: List<String> = emptyList()) {
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
                 text = stringResource(R.string.home_stats_title),
@@ -227,7 +233,9 @@ private fun ResumeCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(2.dp, Dimens.RadiusLarge)
             .clip(Dimens.RadiusLarge)
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .clickable(onClick = onAction)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
