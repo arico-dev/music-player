@@ -82,6 +82,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -634,19 +635,40 @@ private fun PlayerControlsRow(
                 modifier = Modifier.size(40.dp)
             )
         }
-        IconButton(
-            onClick = onTogglePlayPause,
-            modifier = Modifier
-                .size(72.dp)
-                .clip(CircleShape)
-                .background(onBase)
+        val playScale by animateFloatAsState(
+            targetValue = if (isPlaying) 1f else 0.97f,
+            animationSpec = spring(dampingRatio = 0.6f, stiffness = 300f),
+            label = "playScale"
+        )
+        Box(
+            modifier = Modifier.size(96.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                tint = Color.Black,
-                modifier = Modifier.size(48.dp)
+            Box(
+                modifier = Modifier
+                    .size(88.dp)
+                    .graphicsLayer {
+                        scaleX = playScale
+                        scaleY = playScale
+                    }
+                    .clip(CircleShape)
+                    .background(onBase.copy(alpha = 0.22f))
             )
+            IconButton(
+                onClick = onTogglePlayPause,
+                modifier = Modifier
+                    .size(72.dp)
+                    .shadow(6.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(onBase)
+            ) {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                    tint = Color.Black,
+                    modifier = Modifier.size(44.dp)
+                )
+            }
         }
         IconButton(onClick = onNext, modifier = Modifier.size(56.dp)) {
             Icon(
