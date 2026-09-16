@@ -22,6 +22,7 @@ import com.musicplayer.app.feature.widget.WidgetStateStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -64,6 +65,12 @@ class PlaybackController @Inject constructor(
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying
+
+    /** Timestamp (epoch ms) en el que dispara el temporizador de pausa; null = apagado. */
+    private val _sleepTimerEndsAt = MutableStateFlow<Long?>(null)
+    val sleepTimerEndsAt: StateFlow<Long?> = _sleepTimerEndsAt
+
+    private var sleepTimerJob: Job? = null
 
     private val widgetScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -324,6 +331,25 @@ class PlaybackController @Inject constructor(
 
     fun togglePlayPause() {
         withPlayer { p -> if (p.isPlaying) p.pause() else p.play() }
+    }
+
+    /** Programa la pausa automática tras [minutes] minutos (reemplaza el timer anterior). */
+    fun setSleepTimer(minutes: Int) {
+        sleepTimerJob?.cancel()
+        val endsAt = System.currentTimeMillis() + minutes * 60_000L
+        _sleepTimerEndsAt.value = endsAt
+        sleepTimerJob = widgetScope.launch {
+            delay(minutes * 60_000L)
+            _sleepTimerEndsAt.value = null
+            withPlayer { p -> if (p.isPlaying) p.pause() }
+        }
+    }
+
+    /** Cancela el temporizador de pausa si estaba programado. */
+    fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        _sleepTimerEndsAt.value = null
     }
 
     fun skipToNext() {

@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -100,6 +101,7 @@ fun PlayerScreen(
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
+    val sleepTimerRemaining by viewModel.sleepTimerRemaining.collectAsStateWithLifecycle()
     val isFavorite = currentSong?.id in favoriteIds
 
     var showQueue by remember { mutableStateOf(false) }
@@ -131,6 +133,7 @@ fun PlayerScreen(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
                 isFavorite = isFavorite,
+                sleepTimerRemaining = sleepTimerRemaining,
                 position = position,
                 duration = duration,
                 isShuffled = isShuffled,
@@ -141,6 +144,8 @@ fun PlayerScreen(
                 onCycleRepeat = viewModel::cycleRepeatMode,
                 onTogglePlayPause = viewModel::togglePlayPause,
                 onToggleFavorite = { currentSong?.let(viewModel::toggleFavorite) },
+                onSetSleepTimer = viewModel::setSleepTimer,
+                onCancelSleepTimer = viewModel::cancelSleepTimer,
                 onPrevious = viewModel::skipToPrevious,
                 onNext = viewModel::skipToNext,
                 onSeek = viewModel::seekTo,
@@ -162,6 +167,7 @@ private fun PlayerContent(
     currentSong: Song?,
     isPlaying: Boolean,
     isFavorite: Boolean,
+    sleepTimerRemaining: Int?,
     position: Long,
     duration: Long,
     isShuffled: Boolean,
@@ -172,6 +178,8 @@ private fun PlayerContent(
     onCycleRepeat: () -> Unit,
     onTogglePlayPause: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onSetSleepTimer: (Int) -> Unit,
+    onCancelSleepTimer: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -242,9 +250,12 @@ private fun PlayerContent(
                     ActionChipsRow(
                         queueSize = queueSize,
                         isFavorite = isFavorite,
+                        sleepTimerRemaining = sleepTimerRemaining,
                         onOpenQueue = onOpenQueue,
                         onOpenLyrics = onOpenLyrics,
                         onToggleFavorite = onToggleFavorite,
+                        onSetSleepTimer = onSetSleepTimer,
+                        onCancelSleepTimer = onCancelSleepTimer,
                         onBase = onBase
                     )
                 }
@@ -293,9 +304,12 @@ private fun PlayerContent(
                 ActionChipsRow(
                     queueSize = queueSize,
                     isFavorite = isFavorite,
+                    sleepTimerRemaining = sleepTimerRemaining,
                     onOpenQueue = onOpenQueue,
                     onOpenLyrics = onOpenLyrics,
                     onToggleFavorite = onToggleFavorite,
+                    onSetSleepTimer = onSetSleepTimer,
+                    onCancelSleepTimer = onCancelSleepTimer,
                     onBase = onBase
                 )
             }
@@ -517,9 +531,12 @@ private fun PlayerControlsRow(
 private fun ActionChipsRow(
     queueSize: Int,
     isFavorite: Boolean,
+    sleepTimerRemaining: Int?,
     onOpenQueue: () -> Unit,
     onOpenLyrics: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onSetSleepTimer: (Int) -> Unit,
+    onCancelSleepTimer: () -> Unit,
     onBase: Color
 ) {
     Row(
@@ -554,6 +571,69 @@ private fun ActionChipsRow(
             iconTint = if (isFavorite) Color(0xFFFF5252) else null,
             contentDescription = favoriteDescription
         )
+        Spacer(modifier = Modifier.size(12.dp))
+        SleepTimerChip(
+            remainingSeconds = sleepTimerRemaining,
+            onSetSleepTimer = onSetSleepTimer,
+            onCancelSleepTimer = onCancelSleepTimer,
+            onBase = onBase
+        )
+    }
+}
+
+@Composable
+private fun SleepTimerChip(
+    remainingSeconds: Int?,
+    onSetSleepTimer: (Int) -> Unit,
+    onCancelSleepTimer: () -> Unit,
+    onBase: Color
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val timerActive = remainingSeconds != null
+    Box {
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = { menuExpanded = true })
+                .height(36.dp)
+                .padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Bedtime,
+                contentDescription = stringResource(R.string.a11y_sleep_timer),
+                tint = if (timerActive) Color(0xFFFFC107) else onBase.copy(alpha = 0.8f)
+            )
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(
+                text = if (timerActive) formatTime(remainingSeconds * 1000L) else stringResource(R.string.sleep_timer),
+                style = MaterialTheme.typography.labelLarge,
+                color = onBase.copy(alpha = if (timerActive) 1f else 0.8f)
+            )
+        }
+        DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = { menuExpanded = false }
+        ) {
+            if (timerActive) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.sleep_timer_cancel)) },
+                    onClick = {
+                        menuExpanded = false
+                        onCancelSleepTimer()
+                    }
+                )
+            }
+            listOf(5, 10, 15, 20, 30, 60).forEach { minutes ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.sleep_timer_minutes, minutes)) },
+                    onClick = {
+                        menuExpanded = false
+                        onSetSleepTimer(minutes)
+                    }
+                )
+            }
+        }
     }
 }
 

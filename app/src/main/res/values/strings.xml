@@ -93,6 +93,10 @@
     <string name="lyrics_not_found">No se encontraron letras para esta canción.</string>
     <string name="lyrics_instrumental">Esta canción parece ser instrumental.</string>
     <string name="lyrics_retry">Reintentar</string>
+    <string name="sleep_timer">Dormir</string>
+    <string name="sleep_timer_cancel">Apagar temporizador</string>
+    <string name="sleep_timer_minutes">%1$d min</string>
+    <string name="a11y_sleep_timer">Temporizador de pausa</string>
 
     <!-- Song info -->
     <string name="song_info_title">Información de la canción</string>

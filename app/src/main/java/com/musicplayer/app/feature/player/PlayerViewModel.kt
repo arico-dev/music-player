@@ -69,6 +69,9 @@ class PlayerViewModel @Inject constructor(
     private val _repeatMode = MutableStateFlow(Player.REPEAT_MODE_OFF)
     val repeatMode: StateFlow<Int> = _repeatMode
 
+    private val _sleepTimerRemaining = MutableStateFlow<Int?>(null)
+    val sleepTimerRemaining: StateFlow<Int?> = _sleepTimerRemaining
+
     private val _dominantColor = MutableStateFlow<Int?>(null)
     val dominantColor: StateFlow<Int?> = _dominantColor
 
@@ -92,6 +95,13 @@ class PlayerViewModel @Inject constructor(
                 _duration.value = playbackController.duration()
                 _isShuffled.value = playbackController.isShuffled
                 _repeatMode.value = playbackController.repeatMode
+                _sleepTimerRemaining.value = playbackController.sleepTimerEndsAt.value
+                    ?.let { endsAt ->
+                        ((endsAt - System.currentTimeMillis() + 999) / 1000)
+                            .toInt()
+                            .coerceAtLeast(0)
+                    }
+                    ?.takeIf { it > 0 }
                 delay(500)
             }
         }
@@ -114,6 +124,10 @@ class PlayerViewModel @Inject constructor(
     fun toggleShuffle() = playbackController.setShuffleEnabled(!playbackController.isShuffled)
 
     fun cycleRepeatMode() = playbackController.toggleRepeatMode()
+
+    fun setSleepTimer(minutes: Int) = playbackController.setSleepTimer(minutes)
+
+    fun cancelSleepTimer() = playbackController.cancelSleepTimer()
 
     fun requestSongInfo(song: Song) {
         viewModelScope.launch {
