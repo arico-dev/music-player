@@ -13,7 +13,7 @@ Aplicación Android de reproducción de música local, escrita en **Kotlin + Jet
 | Imágenes | Coil `2.7.0` (con SVG) |
 | Red | Retrofit `2.11.0` + OkHttp `4.12.0` + kotlinx.serialization `1.9.0` |
 | Build | AGP `9.3.2`, Kotlin `2.2.10`, Gradle 9.5; `minSdk 30`, `targetSdk 36` |
-| Releases | `1.4.2` (205→207) — Ajustes, vacíos+a11y, seekbar expressive, pulidos, Home reorder, artista imagen, dedup álbum |
+| Releases | `1.5.0` (210) — favoritos, sleep timer, doble tap ±10s + marquee, fondo atmosférico, tokens, now-playing animado, pack estético (seekbar fino, play con halo, miniplayer con progreso, bottom bar píldora que respeta botones, tabs píldora, cards con elevación, hero saludo), typography más densa, créditos GitHub. Anterior: `1.4.2` (205→207) — Ajustes, vacíos+a11y, seekbar expressive, pulidos, Home reorder, artista imagen, dedup álbum |
 
 ## Jerarquía de código
 
