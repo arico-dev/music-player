@@ -37,7 +37,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lyrics
@@ -110,6 +109,9 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
+import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.FavoriteRed
+import com.musicplayer.app.ui.theme.TimerAmber
 
 @Composable
 fun PlayerScreen(
@@ -706,7 +708,7 @@ private fun ActionChipsRow(
             text = stringResource(R.string.favorite),
             onClick = onToggleFavorite,
             onBase = onBase,
-            iconTint = if (isFavorite) Color(0xFFFF5252) else null,
+            iconTint = if (isFavorite) FavoriteRed else null,
             contentDescription = favoriteDescription
         )
         Spacer(modifier = Modifier.size(12.dp))
@@ -731,7 +733,7 @@ private fun SleepTimerChip(
     Box {
         Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
+                .clip(Dimens.RadiusXLarge)
                 .clickable(onClick = { menuExpanded = true })
                 .height(36.dp)
                 .padding(horizontal = 16.dp),
@@ -740,7 +742,7 @@ private fun SleepTimerChip(
             Icon(
                 imageVector = Icons.Filled.Bedtime,
                 contentDescription = stringResource(R.string.a11y_sleep_timer),
-                tint = if (timerActive) Color(0xFFFFC107) else onBase.copy(alpha = 0.8f)
+                tint = if (timerActive) TimerAmber else onBase.copy(alpha = 0.8f)
             )
             Spacer(modifier = Modifier.size(6.dp))
             Text(
@@ -786,7 +788,7 @@ private fun ActionChip(
 ) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(Dimens.RadiusXLarge)
             .clickable(onClick = onClick)
             .height(36.dp)
             .padding(horizontal = 16.dp),
@@ -834,7 +836,7 @@ private fun AlbumArt(
                     }
                 )
             }
-            .clip(RoundedCornerShape(20.dp))
+            .clip(Dimens.RadiusXLarge)
             .background(onBase.copy(alpha = 0.15f))
             .graphicsLayer {
                 scaleX = breathingScale
@@ -938,7 +940,7 @@ private fun QueueSheet(
                     Box(
                         modifier = Modifier
                             .size(44.dp)
-                            .clip(RoundedCornerShape(8.dp))
+                            .clip(Dimens.RadiusSmall)
                             .background(MaterialTheme.colorScheme.surface)
                     ) {
                         if (song.albumArtUri != null) {
@@ -1174,7 +1176,7 @@ private fun PlainLyrics(
                 color = if (active) activeText else inactiveColor,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(Dimens.RadiusMedium)
                     .background(if (active) activeBackground else Color.Transparent)
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             )
@@ -1224,7 +1226,7 @@ private fun SyncedLyrics(
                 color = if (active) activeText else inactiveColor,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(Dimens.RadiusMedium)
                     .background(
                         if (active) activeBackground else Color.Transparent
                     )
