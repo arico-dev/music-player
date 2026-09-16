@@ -42,7 +42,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.SecondaryScrollableTabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.produceState
@@ -56,6 +57,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -211,14 +213,26 @@ private fun LibraryTabs(
     val tabs = LibraryTab.entries
 
     Column(modifier = modifier) {
-        androidx.compose.material3.PrimaryScrollableTabRow(
+        SecondaryScrollableTabRow(
             selectedTabIndex = selectedTab.ordinal,
-            edgePadding = 0.dp
+            edgePadding = 0.dp,
+            divider = {},
+            containerColor = Color.Transparent,
+            indicator = {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier
+                        .tabIndicatorOffset(selectedTab.ordinal)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                )
+            }
         ) {
             tabs.forEach { tab ->
                 Tab(
                     selected = selectedTab == tab,
                     onClick = { onSelectTab(tab) },
+                    selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     text = {
                         Text(
                             text = stringResource(tab.labelRes),
