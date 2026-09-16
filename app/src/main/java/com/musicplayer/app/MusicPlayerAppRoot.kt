@@ -1,25 +1,39 @@
 package com.musicplayer.app
 
 import android.net.Uri
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -37,6 +51,7 @@ import com.musicplayer.app.feature.miniplayer.MiniPlayer
 import com.musicplayer.app.feature.player.PlayerScreen
 import com.musicplayer.app.feature.search.SearchScreen
 import com.musicplayer.app.feature.settings.SettingsScreen
+import com.musicplayer.app.ui.theme.Dimens
 
 object Routes {
     const val ROOT = "root"
@@ -238,21 +253,52 @@ private fun BottomBar(
     currentRoute: String?,
     onSelect: (String) -> Unit
 ) {
-    NavigationBar {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .shadow(8.dp, Dimens.RadiusPill)
+            .clip(Dimens.RadiusPill)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+    ) {
+        NavigationBar(
+            containerColor = Color.Transparent,
+            tonalElevation = 0.dp,
+            windowInsets = WindowInsets(0, 0, 0, 0)
+        ) {
         Routes.bottomTabs.forEach { tab ->
+            val selected = currentRoute == tab.route
+            val iconScale by animateFloatAsState(
+                targetValue = if (selected) 1f else 0.9f,
+                animationSpec = spring(dampingRatio = 0.5f, stiffness = 300f),
+                label = "navIconScale"
+            )
             NavigationBarItem(
-                selected = currentRoute == tab.route,
+                selected = selected,
                 onClick = { onSelect(tab.route) },
                 icon = {
                     Icon(
                         imageVector = tab.icon,
-                        contentDescription = stringResource(tab.labelRes)
+                        contentDescription = stringResource(tab.labelRes),
+                        modifier = Modifier.graphicsLayer {
+                            scaleX = iconScale
+                            scaleY = iconScale
+                        }
                     )
                 },
                 label = {
                     Text(text = stringResource(tab.labelRes))
-                }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.secondaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             )
         }
+    }
     }
 }
