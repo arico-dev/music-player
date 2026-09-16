@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -39,6 +38,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.player.PlaybackController
+import com.musicplayer.app.ui.theme.Dimens
 
 /** Controlador que usa el mini-player: expone el estado y las acciones básicas. */
 interface MiniPlayerActions {
@@ -93,7 +93,7 @@ private fun MiniPlayerContent(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(Dimens.RadiusLarge)
             .background(
                 if (baseColor != null) {
                     Brush.horizontalGradient(listOf(baseColor, baseColor.copy(alpha = 0.7f)))
@@ -113,7 +113,7 @@ private fun MiniPlayerContent(
         Box(
             modifier = Modifier
                 .size(44.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surface)
         ) {
             if (song.albumArtUri != null) {

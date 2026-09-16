@@ -24,7 +24,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Audiotrack
@@ -76,6 +75,7 @@ import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
+import com.musicplayer.app.ui.theme.Dimens
 
 enum class LibraryTab(val labelRes: Int) {
     SONGS(R.string.tab_songs),
@@ -386,7 +386,7 @@ private fun SongRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (song.albumArtUri != null) {

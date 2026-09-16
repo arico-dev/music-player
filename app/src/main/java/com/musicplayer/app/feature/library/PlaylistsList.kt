@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronRight
@@ -40,6 +39,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Playlist
+import com.musicplayer.app.ui.theme.Dimens
 
 @Composable
 fun PlaylistList(
@@ -208,7 +208,7 @@ private fun PlaylistRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             Icon(

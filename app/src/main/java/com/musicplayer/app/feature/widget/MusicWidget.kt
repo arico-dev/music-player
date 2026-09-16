@@ -10,7 +10,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -45,6 +44,10 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.musicplayer.app.MainActivity
 import com.musicplayer.app.R
+import com.musicplayer.app.ui.theme.DarkOnSurface
+import com.musicplayer.app.ui.theme.DarkOnSurfaceVariant
+import com.musicplayer.app.ui.theme.DarkSecondary
+import com.musicplayer.app.ui.theme.DarkSurface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -108,10 +111,10 @@ data class WidgetActions(
     val next: Action,
 )
 
-private val WidgetBg = ColorProvider(Color(0xFF1C1B1F))
-private val WidgetOnSurface = ColorProvider(Color(0xFFE6E0E9))
-private val WidgetOnSurfaceVariant = ColorProvider(Color(0xFFBDB7C2))
-private val WidgetBtnBg = ColorProvider(Color(0x33D0BCFF))
+private val WidgetBg = ColorProvider(DarkSurface)
+private val WidgetOnSurface = ColorProvider(DarkOnSurface)
+private val WidgetOnSurfaceVariant = ColorProvider(DarkOnSurfaceVariant)
+private val WidgetBtnBg = ColorProvider(DarkSecondary.copy(alpha = 0.2f))
 
 @Composable
 fun MusicWidgetContent(

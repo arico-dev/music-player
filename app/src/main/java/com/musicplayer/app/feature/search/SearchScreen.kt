@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -51,6 +50,7 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.SongInfoSheet
+import com.musicplayer.app.ui.theme.Dimens
 
 @Composable
 fun SearchScreen(
@@ -174,7 +174,7 @@ private fun SongRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (song.albumArtUri != null) {
@@ -250,7 +250,7 @@ private fun AlbumRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (album.albumArtUri != null) {

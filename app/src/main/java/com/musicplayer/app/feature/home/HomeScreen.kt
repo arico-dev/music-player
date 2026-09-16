@@ -16,7 +16,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -46,6 +45,7 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.usage.UsageData
 import com.musicplayer.app.feature.common.AlbumCard
+import com.musicplayer.app.ui.theme.Dimens
 import java.time.LocalDateTime
 
 @Composable
@@ -224,7 +224,7 @@ private fun ResumeCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(Dimens.RadiusLarge)
             .clickable(onClick = onAction)
             .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -299,7 +299,7 @@ private fun Artwork(song: Song, size: androidx.compose.ui.unit.Dp) {
     Box(
         modifier = Modifier
             .size(size)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(Dimens.RadiusSmall)
     ) {
         if (song.albumArtUri != null) {
             AsyncImage(

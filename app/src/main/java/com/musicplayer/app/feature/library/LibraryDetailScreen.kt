@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MusicNote
@@ -48,6 +47,7 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.AlbumCard
+import com.musicplayer.app.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -261,7 +261,7 @@ private fun DetailArtwork(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(Dimens.RadiusLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
         if (artworkUri != null) {
@@ -293,7 +293,7 @@ private fun ArtistArtwork(
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(100.dp))
+            .clip(Dimens.RadiusPill)
             .background(MaterialTheme.colorScheme.primaryContainer)
     ) {
         if (imageUrl != null) {
@@ -329,7 +329,7 @@ private fun DetailSongRow(
         Box(
             modifier = Modifier
                 .size(48.dp)
-                .clip(RoundedCornerShape(8.dp))
+                .clip(Dimens.RadiusSmall)
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         ) {
             if (song.albumArtUri != null) {
