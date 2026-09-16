@@ -1,11 +1,21 @@
 package com.musicplayer.app.feature.player
 
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +31,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -58,6 +69,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.media3.common.Player
 import androidx.compose.material3.Text
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -67,15 +79,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -212,6 +236,9 @@ private fun PlayerContent(
                 AlbumArt(
                     artUri = currentSong?.albumArtUri?.toString(),
                     onBase = onBase,
+                    positionMs = position,
+                    durationMs = duration,
+                    onSeek = onSeek,
                     modifier = Modifier
                         .fillMaxHeight(0.85f)
                         .aspectRatio(1f)
@@ -272,6 +299,9 @@ private fun PlayerContent(
                 AlbumArt(
                     artUri = currentSong?.albumArtUri?.toString(),
                     onBase = onBase,
+                    positionMs = position,
+                    durationMs = duration,
+                    onSeek = onSeek,
                     modifier = Modifier
                         .fillMaxWidth(0.78f)
                         .aspectRatio(1f)
@@ -324,16 +354,22 @@ private fun SongTitleBlock(
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.animateContentSize()
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize()
     ) {
-        AnimatedContent(targetState = currentSong?.title ?: "Nada sonando", label = "title") { title ->
-            Text(
+        AnimatedContent(
+            targetState = currentSong?.title ?: "Nada sonando",
+            modifier = Modifier.fillMaxWidth(),
+            label = "title"
+        ) { title ->
+            MarqueeText(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 color = onBase,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
             )
         }
         AnimatedContent(targetState = currentSong?.artist ?: "", label = "artist") { artist ->
@@ -346,6 +382,65 @@ private fun SongTitleBlock(
                 textAlign = TextAlign.Center
             )
         }
+    }
+}
+
+@Composable
+private fun MarqueeText(
+    text: String,
+    style: TextStyle,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val textMeasurer = rememberTextMeasurer()
+    val density = LocalDensity.current
+    var containerWidthPx by remember { mutableIntStateOf(0) }
+    val measuredWidthPx = remember(text, style, textMeasurer) {
+        textMeasurer.measure(
+            text = AnnotatedString(text),
+            style = style,
+            constraints = Constraints(maxWidth = Int.MAX_VALUE)
+        ).size.width
+    }
+    val reduceMotion = Settings.Global.getFloat(
+        context.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) == 0f
+    val scrollDistance = if (containerWidthPx > 0) measuredWidthPx - containerWidthPx else 0
+    val shouldScroll = !reduceMotion && scrollDistance > 0
+    val infiniteTransition = rememberInfiniteTransition(label = "marquee")
+    val animatedX by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = if (shouldScroll) -scrollDistance.toFloat() else 0f,
+        animationSpec = if (shouldScroll) {
+            infiniteRepeatable(
+                animation = tween(durationMillis = 8_000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            )
+        } else {
+            infiniteRepeatable(animation = tween(durationMillis = 1))
+        },
+        label = "marqueeX"
+    )
+    Box(
+        modifier = modifier
+            .onSizeChanged { containerWidthPx = it.width }
+            .clipToBounds()
+    ) {
+        Text(
+            text = text,
+            style = style,
+            color = color,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+            modifier = Modifier
+                .align(if (shouldScroll) Alignment.CenterStart else Alignment.Center)
+                .width(with(density) { measuredWidthPx.toDp() })
+                .graphicsLayer { translationX = animatedX }
+        )
     }
 }
 
@@ -672,10 +767,24 @@ private fun ActionChip(
 private fun AlbumArt(
     artUri: String?,
     onBase: Color,
+    positionMs: Long,
+    durationMs: Long,
+    onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     Box(
         modifier = modifier
+            .pointerInput(durationMs) {
+                detectTapGestures(
+                    onDoubleTap = { offset ->
+                        val delta = if (offset.x < size.width / 2f) -10_000L else 10_000L
+                        val target = (positionMs + delta).coerceIn(0L, durationMs)
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onSeek(target)
+                    }
+                )
+            }
             .clip(RoundedCornerShape(20.dp))
             .background(onBase.copy(alpha = 0.15f))
     ) {
