@@ -18,6 +18,9 @@ val Typography = Typography().let {
         titleSmall = it.titleSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
         headlineSmall = it.headlineSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
         labelLarge = it.labelLarge.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
-        labelMedium = it.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp)
+        labelMedium = it.labelMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        bodyLarge = it.bodyLarge.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+        bodyMedium = it.bodyMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+        bodySmall = it.bodySmall.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.sp)
     )
 }

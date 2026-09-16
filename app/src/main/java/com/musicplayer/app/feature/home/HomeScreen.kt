@@ -87,7 +87,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item(key = "greeting", span = { GridItemSpan(maxLineSpan) }) {
-                Greeting()
+                Greeting(todayMs = usage.todayMs(now), topGenres = topGenres)
             }
             val resume = resumeEntry
             if (resume != null) {
@@ -137,17 +137,35 @@ fun HomeScreen(
 }
 
 @Composable
-private fun Greeting() {
+private fun Greeting(
+    todayMs: Long,
+    topGenres: List<String>
+) {
     val now = LocalDateTime.now()
     val greeting = when (now.hour) {
         in 6 until 12 -> stringResource(R.string.home_greeting_morning)
         in 12 until 20 -> stringResource(R.string.home_greeting_afternoon)
         else -> stringResource(R.string.home_greeting_evening)
     }
-    Text(
-        text = greeting,
-        style = MaterialTheme.typography.headlineSmall
-    )
+    Column {
+        Text(
+            text = greeting,
+            style = MaterialTheme.typography.headlineMedium
+        )
+        val subtitle = when {
+            todayMs > 0 -> stringResource(R.string.home_hero_today_played, formatDuration(todayMs))
+            topGenres.isNotEmpty() -> stringResource(R.string.home_hero_top_genres, topGenres.joinToString(" · "))
+            else -> null
+        }
+        if (subtitle != null) {
+            Spacer(modifier = Modifier.size(4.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
