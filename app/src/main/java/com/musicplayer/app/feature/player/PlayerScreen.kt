@@ -14,6 +14,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -81,6 +82,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -541,15 +545,28 @@ private fun SeekRow(
                         thumbSize = DpSize(thumbSize, thumbSize)
                     )
                 },
-                track = { sliderState ->
-                    SliderDefaults.Track(
-                        sliderState = sliderState,
-                        colors = SliderDefaults.colors(
-                            activeTrackColor = onBase,
-                            inactiveTrackColor = onBase.copy(alpha = 0.3f)
-                        ),
-                        thumbTrackGapSize = 0.dp
-                    )
+                track = {
+                    val fraction = (sliderValue / duration.toFloat()).coerceIn(0f, 1f)
+                    Canvas(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(2.dp)
+                    ) {
+                        val thickness = 2.dp.toPx()
+                        val yCenter = size.height / 2f
+                        drawRoundRect(
+                            color = onBase.copy(alpha = 0.3f),
+                            topLeft = Offset(0f, yCenter - thickness / 2f),
+                            size = Size(size.width, thickness),
+                            cornerRadius = CornerRadius(thickness / 2f)
+                        )
+                        drawRoundRect(
+                            color = onBase,
+                            topLeft = Offset(0f, yCenter - thickness / 2f),
+                            size = Size(size.width * fraction, thickness),
+                            cornerRadius = CornerRadius(thickness / 2f)
+                        )
+                    }
                 }
             )
         }
