@@ -7,6 +7,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -54,8 +55,6 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.outlined.KeyboardArrowDown
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -78,8 +77,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
@@ -187,6 +189,43 @@ fun PlayerScreen(
 }
 
 @Composable
+private fun AtmosphericBackground(
+    artUri: String?,
+    backgroundColors: List<Color>
+) {
+    if (artUri != null) {
+        Image(
+            painter = rememberAsyncImagePainter(artUri),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .fillMaxSize()
+                .scale(1.3f)
+                .blur(radius = 60.dp, edgeTreatment = BlurredEdgeTreatment.Unbounded)
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Black.copy(alpha = 0.4f),
+                            Color.Black.copy(alpha = 0.75f),
+                            Color.Black
+                        )
+                    )
+                )
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Brush.verticalGradient(colors = backgroundColors))
+        )
+    }
+}
+
+@Composable
 private fun PlayerContent(
     currentSong: Song?,
     isPlaying: Boolean,
@@ -220,10 +259,12 @@ private fun PlayerContent(
     }
 
     BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Brush.verticalGradient(colors = backgroundColors))
+        modifier = Modifier.fillMaxSize()
     ) {
+        AtmosphericBackground(
+            artUri = currentSong?.albumArtUri?.toString(),
+            backgroundColors = backgroundColors
+        )
         if (maxWidth > maxHeight) {
             // Horizontal: carátula a la izquierda, controles a la derecha
             Row(
@@ -235,6 +276,7 @@ private fun PlayerContent(
             ) {
                 AlbumArt(
                     artUri = currentSong?.albumArtUri?.toString(),
+                    isPlaying = isPlaying,
                     onBase = onBase,
                     positionMs = position,
                     durationMs = duration,
@@ -298,6 +340,7 @@ private fun PlayerContent(
             ) {
                 AlbumArt(
                     artUri = currentSong?.albumArtUri?.toString(),
+                    isPlaying = isPlaying,
                     onBase = onBase,
                     positionMs = position,
                     durationMs = duration,
@@ -766,6 +809,7 @@ private fun ActionChip(
 @Composable
 private fun AlbumArt(
     artUri: String?,
+    isPlaying: Boolean,
     onBase: Color,
     positionMs: Long,
     durationMs: Long,
@@ -773,6 +817,11 @@ private fun AlbumArt(
     modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
+    val breathingScale by animateFloatAsState(
+        targetValue = if (isPlaying) 1f else 0.93f,
+        animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+        label = "breathingScale"
+    )
     Box(
         modifier = modifier
             .pointerInput(durationMs) {
@@ -787,6 +836,10 @@ private fun AlbumArt(
             }
             .clip(RoundedCornerShape(20.dp))
             .background(onBase.copy(alpha = 0.15f))
+            .graphicsLayer {
+                scaleX = breathingScale
+                scaleY = breathingScale
+            }
     ) {
         Crossfade(targetState = artUri, label = "albumArt") { uri ->
             if (uri != null) {
