@@ -1,5 +1,8 @@
 package com.musicplayer.app.feature.miniplayer
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -20,12 +24,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +52,8 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.player.PlaybackController
 import com.musicplayer.app.ui.theme.Dimens
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 /** Controlador que usa el mini-player: expone el estado y las acciones básicas. */
 interface MiniPlayerActions {
@@ -61,9 +76,22 @@ fun MiniPlayer(
 
     if (currentSong == null) return
 
+    val song = currentSong!!
+    var position by remember(song.id) { mutableLongStateOf(0L) }
+    var duration by remember(song.id) { mutableLongStateOf(0L) }
+    LaunchedEffect(song.id) {
+        while (isActive) {
+            position = playbackController.currentPosition()
+            duration = playbackController.duration()
+            delay(500)
+        }
+    }
+
     MiniPlayerContent(
-        song = currentSong!!,
+        song = song,
         isPlaying = isPlaying,
+        position = position,
+        duration = duration,
         dominantColor = dominantColor,
         onTogglePlayPause = playbackController::togglePlayPause,
         onNext = playbackController::skipToNext,
@@ -76,6 +104,8 @@ fun MiniPlayer(
 private fun MiniPlayerContent(
     song: Song,
     isPlaying: Boolean,
+    position: Long,
+    duration: Long,
     dominantColor: Int?,
     onTogglePlayPause: () -> Unit,
     onNext: () -> Unit,
@@ -89,10 +119,11 @@ private fun MiniPlayerContent(
     val playColor = onBase ?: MaterialTheme.colorScheme.primary
     val nextColor = onBase?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
 
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 8.dp)
+            .shadow(4.dp, Dimens.RadiusLarge)
             .clip(Dimens.RadiusLarge)
             .background(
                 if (baseColor != null) {
@@ -107,63 +138,100 @@ private fun MiniPlayerContent(
                 }
             )
             .clickable(onClick = onClick)
-            .padding(8.dp),
-        verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surface)
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            if (song.albumArtUri != null) {
-                AsyncImage(
-                    model = song.albumArtUri,
-                    contentDescription = stringResource(R.string.a11y_album_art),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(44.dp)
+            val artScale by animateFloatAsState(
+                targetValue = if (isPlaying) 1f else 0.93f,
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+                label = "miniArtScale"
+            )
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .graphicsLayer {
+                        scaleX = artScale
+                        scaleY = artScale
+                    }
+                    .clip(Dimens.RadiusSmall)
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                if (song.albumArtUri != null) {
+                    AsyncImage(
+                        model = song.albumArtUri,
+                        contentDescription = stringResource(R.string.a11y_album_art),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(44.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.MusicNote,
+                        contentDescription = stringResource(R.string.a11y_album_art),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.size(12.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = titleColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-            } else {
+                Text(
+                    text = song.artist,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = artistColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            IconButton(onClick = onTogglePlayPause) {
                 Icon(
-                    imageVector = Icons.Filled.MusicNote,
-                    contentDescription = stringResource(R.string.a11y_album_art),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(24.dp)
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pausar" else "Reproducir",
+                    tint = playColor
+                )
+            }
+            IconButton(onClick = onNext) {
+                Icon(
+                    imageVector = Icons.Filled.SkipNext,
+                    contentDescription = "Siguiente",
+                    tint = nextColor
                 )
             }
         }
-        Spacer(modifier = Modifier.size(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = titleColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = song.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = artistColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        IconButton(onClick = onTogglePlayPause) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = if (isPlaying) "Pausar" else "Reproducir",
-                tint = playColor
-            )
-        }
-        IconButton(onClick = onNext) {
-            Icon(
-                imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Siguiente",
-                tint = nextColor
-            )
+        if (duration > 0) {
+            val fraction = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+            val trackInactive = (onBase ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.25f)
+            val trackActive = onBase ?: MaterialTheme.colorScheme.primary
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(2.dp)
+            ) {
+                val thickness = 2.dp.toPx()
+                val yCenter = size.height / 2f
+                drawRoundRect(
+                    color = trackInactive,
+                    topLeft = Offset(0f, yCenter - thickness / 2f),
+                    size = Size(size.width, thickness),
+                    cornerRadius = CornerRadius(thickness / 2f)
+                )
+                drawRoundRect(
+                    color = trackActive,
+                    topLeft = Offset(0f, yCenter - thickness / 2f),
+                    size = Size(size.width * fraction, thickness),
+                    cornerRadius = CornerRadius(thickness / 2f)
+                )
+            }
         }
     }
 }
