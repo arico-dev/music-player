@@ -29,6 +29,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lyrics
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
@@ -97,6 +99,8 @@ fun PlayerScreen(
     val dominantColor by viewModel.dominantColor.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
+    val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
+    val isFavorite = currentSong?.id in favoriteIds
 
     var showQueue by remember { mutableStateOf(false) }
     var showLyrics by remember { mutableStateOf(false) }
@@ -126,6 +130,7 @@ fun PlayerScreen(
             else -> PlayerContent(
                 currentSong = currentSong,
                 isPlaying = isPlaying,
+                isFavorite = isFavorite,
                 position = position,
                 duration = duration,
                 isShuffled = isShuffled,
@@ -135,6 +140,7 @@ fun PlayerScreen(
                 onToggleShuffle = viewModel::toggleShuffle,
                 onCycleRepeat = viewModel::cycleRepeatMode,
                 onTogglePlayPause = viewModel::togglePlayPause,
+                onToggleFavorite = { currentSong?.let(viewModel::toggleFavorite) },
                 onPrevious = viewModel::skipToPrevious,
                 onNext = viewModel::skipToNext,
                 onSeek = viewModel::seekTo,
@@ -155,6 +161,7 @@ fun PlayerScreen(
 private fun PlayerContent(
     currentSong: Song?,
     isPlaying: Boolean,
+    isFavorite: Boolean,
     position: Long,
     duration: Long,
     isShuffled: Boolean,
@@ -164,6 +171,7 @@ private fun PlayerContent(
     onToggleShuffle: () -> Unit,
     onCycleRepeat: () -> Unit,
     onTogglePlayPause: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -207,7 +215,12 @@ private fun PlayerContent(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    SongTitleBlock(currentSong = currentSong, onBase = onBase)
+                    SongTitleBlock(
+                        currentSong = currentSong,
+                        isFavorite = isFavorite,
+                        onToggleFavorite = onToggleFavorite,
+                        onBase = onBase
+                    )
                     Spacer(modifier = Modifier.height(24.dp))
                     SeekRow(
                         position = position,
@@ -253,7 +266,12 @@ private fun PlayerContent(
                         .aspectRatio(1f)
                 )
                 Spacer(modifier = Modifier.height(40.dp))
-                SongTitleBlock(currentSong = currentSong, onBase = onBase)
+                SongTitleBlock(
+                    currentSong = currentSong,
+                    isFavorite = isFavorite,
+                    onToggleFavorite = onToggleFavorite,
+                    onBase = onBase
+                )
                 Spacer(modifier = Modifier.height(32.dp))
                 SeekRow(
                     position = position,
@@ -288,21 +306,48 @@ private fun PlayerContent(
 @Composable
 private fun SongTitleBlock(
     currentSong: Song?,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
     onBase: Color
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.animateContentSize()
     ) {
-        AnimatedContent(targetState = currentSong?.title ?: "Nada sonando", label = "title") { title ->
-            Text(
-                text = title,
-                style = MaterialTheme.typography.headlineSmall,
-                color = onBase,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AnimatedContent(
+                targetState = currentSong?.title ?: "Nada sonando",
+                modifier = Modifier.weight(1f, fill = false),
+                label = "title"
+            ) { title ->
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = onBase,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+            if (currentSong != null) {
+                Spacer(modifier = Modifier.size(4.dp))
+                val favoriteDescription = if (isFavorite) {
+                    stringResource(R.string.a11y_favorite_remove)
+                } else {
+                    stringResource(R.string.a11y_favorite_add)
+                }
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = favoriteDescription,
+                        tint = if (isFavorite) Color(0xFFFF5252) else onBase.copy(alpha = 0.8f)
+                    )
+                }
+            }
         }
         AnimatedContent(targetState = currentSong?.artist ?: "", label = "artist") { artist ->
             Text(

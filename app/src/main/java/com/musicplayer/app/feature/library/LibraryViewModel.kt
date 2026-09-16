@@ -1,5 +1,6 @@
 package com.musicplayer.app.feature.library
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.musicplayer.app.core.model.Album
@@ -10,15 +11,18 @@ import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.core.model.SongMetadata
 import com.musicplayer.app.data.artist.ArtistImageRepository
+import com.musicplayer.app.data.favorites.FavoritesStore
 import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.data.repository.LibraryRepository
 import com.musicplayer.app.data.repository.PlaylistRepository
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,6 +35,7 @@ data class LibraryUiState(
 
 @HiltViewModel
 class LibraryViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val repository: LibraryRepository,
     private val playlistRepository: PlaylistRepository,
     private val playbackController: PlaybackController,
@@ -64,6 +69,21 @@ class LibraryViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val playlists: StateFlow<List<Playlist>> = playlistRepository.playlists
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val favoriteIds: StateFlow<List<Long>> = FavoritesStore.flow(context)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val favoriteSongs: StateFlow<List<Song>> = favoriteIds
+        .flatMapLatest { ids ->
+            if (ids.isEmpty()) {
+                kotlinx.coroutines.flow.flowOf(emptyList())
+            } else {
+                kotlinx.coroutines.flow.flow {
+                    emit(withContext(Dispatchers.IO) { repository.songsByIds(ids) })
+                }
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val _songInfo = MutableStateFlow<SongMetadata?>(null)
@@ -130,4 +150,8 @@ class LibraryViewModel @Inject constructor(
 
     suspend fun getArtistImageUrl(artist: Artist): String? =
         withContext(Dispatchers.IO) { artistImageRepository.imageUrl(artist.id, artist.name) }
+
+    fun toggleFavorite(song: Song) {
+        viewModelScope.launch { FavoritesStore.toggle(context, song.id) }
+    }
 }

@@ -1,5 +1,6 @@
 package com.musicplayer.app.feature.player
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
@@ -7,11 +8,13 @@ import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.core.model.SongMetadata
 import com.musicplayer.app.core.util.AlbumArtColorExtractor
+import com.musicplayer.app.data.favorites.FavoritesStore
 import com.musicplayer.app.data.lyrics.LyricsRepository
 import com.musicplayer.app.data.lyrics.LyricsResult
 import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.player.PlaybackController
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,11 +35,15 @@ sealed interface LyricsUiState {
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val playbackController: PlaybackController,
     private val colorExtractor: AlbumArtColorExtractor,
     private val metadataReader: MetadataReader,
     private val lyricsRepository: LyricsRepository
 ) : ViewModel() {
+
+    val favoriteIds: StateFlow<List<Long>> = FavoritesStore.flow(context)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val currentSong: StateFlow<Song?> = playbackController.currentSong
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -91,6 +98,10 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun togglePlayPause() = playbackController.togglePlayPause()
+
+    fun toggleFavorite(song: Song) {
+        viewModelScope.launch { FavoritesStore.toggle(context, song.id) }
+    }
 
     fun skipToNext() = playbackController.skipToNext()
 

@@ -29,6 +29,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Audiotrack
 import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Person
@@ -81,7 +83,8 @@ enum class LibraryTab(val labelRes: Int) {
     ARTISTS(R.string.tab_artists),
     GENRES(R.string.tab_genres),
     FOLDERS(R.string.tab_folders),
-    PLAYLISTS(R.string.tab_playlists)
+    PLAYLISTS(R.string.tab_playlists),
+    FAVORITES(R.string.tab_favorites)
 }
 
 @Composable
@@ -102,6 +105,8 @@ fun LibraryScreen(
     val genres by viewModel.genres.collectAsStateWithLifecycle()
     val folders by viewModel.folders.collectAsStateWithLifecycle()
     val playlists by viewModel.playlists.collectAsStateWithLifecycle()
+    val favoriteIds by viewModel.favoriteIds.collectAsStateWithLifecycle()
+    val favoriteSongs by viewModel.favoriteSongs.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
     val selectedTab by viewModel.selectedTab.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -140,8 +145,11 @@ fun LibraryScreen(
                 genres = genres,
                 folders = folders,
                 playlists = playlists,
+                favoriteIds = favoriteIds,
+                favoriteSongs = favoriteSongs,
                 selectedTab = selectedTab,
                 onSelectTab = viewModel::selectTab,
+                onToggleFavorite = viewModel::toggleFavorite,
                 onSongClick = { song ->
                     viewModel.play(song)
                     onSongClick(song)
@@ -175,8 +183,11 @@ private fun LibraryTabs(
     genres: List<Genre>,
     folders: List<Folder>,
     playlists: List<Playlist>,
+    favoriteIds: List<Long>,
+    favoriteSongs: List<Song>,
     selectedTab: LibraryTab,
     onSelectTab: (LibraryTab) -> Unit,
+    onToggleFavorite: (Song) -> Unit,
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
     onAddToPlaylist: (Song, Long) -> Unit,
@@ -213,12 +224,15 @@ private fun LibraryTabs(
         }
 
         Box(modifier = Modifier.weight(1f)) {
+            val favoriteSet = favoriteIds.toSet()
             when (selectedTab) {
                 LibraryTab.SONGS -> SongList(
                     songs = songs,
                     onSongClick = onSongClick,
                     onSongInfo = onSongInfo,
                     onAddToPlaylist = { songToAdd = it },
+                    onToggleFavorite = onToggleFavorite,
+                    favoriteSet = favoriteSet,
                     modifier = Modifier.fillMaxSize()
                 )
                 LibraryTab.ALBUMS -> AlbumGrid(
@@ -245,6 +259,18 @@ private fun LibraryTabs(
                     playlists = playlists,
                     onCreate = onCreatePlaylist,
                     onPlaylistClick = onPlaylistClick,
+                    modifier = Modifier.fillMaxSize()
+                )
+                LibraryTab.FAVORITES -> SongList(
+                    songs = favoriteSongs,
+                    onSongClick = onSongClick,
+                    onSongInfo = onSongInfo,
+                    onAddToPlaylist = { songToAdd = it },
+                    onToggleFavorite = onToggleFavorite,
+                    favoriteSet = favoriteSet,
+                    emptyIcon = Icons.Filled.Favorite,
+                    emptyTitle = stringResource(R.string.favorites_empty_title),
+                    emptySubtitle = stringResource(R.string.favorites_empty_desc),
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -301,16 +327,22 @@ private fun SongList(
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
     onAddToPlaylist: (Song) -> Unit,
-    modifier: Modifier = Modifier
+    onToggleFavorite: (Song) -> Unit,
+    favoriteSet: Set<Long>,
+    modifier: Modifier = Modifier,
+    emptyIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Filled.MusicNote,
+    emptyTitle: String = stringResource(R.string.library_empty_songs_title),
+    emptySubtitle: String = stringResource(R.string.library_empty_songs_desc),
+    showRefreshAction: Boolean = true
 ) {
     if (songs.isEmpty()) {
         val vm: LibraryViewModel = hiltViewModel()
         EmptyState(
-            icon = Icons.Filled.MusicNote,
-            title = stringResource(R.string.library_empty_songs_title),
-            subtitle = stringResource(R.string.library_empty_songs_desc),
-            actionLabel = stringResource(R.string.refresh_library),
-            onAction = vm::forceRefresh,
+            icon = emptyIcon,
+            title = emptyTitle,
+            subtitle = emptySubtitle,
+            actionLabel = if (showRefreshAction) stringResource(R.string.refresh_library) else null,
+            onAction = if (showRefreshAction) vm::forceRefresh else null,
             modifier = modifier
         )
         return
@@ -319,9 +351,11 @@ private fun SongList(
         items(songs, key = { it.id }) { song ->
             SongRow(
                 song = song,
+                isFavorite = song.id in favoriteSet,
                 onClick = { onSongClick(song) },
                 onInfoClick = { onSongInfo(song) },
-                onAddToPlaylist = { onAddToPlaylist(song) }
+                onAddToPlaylist = { onAddToPlaylist(song) },
+                onToggleFavorite = { onToggleFavorite(song) }
             )
         }
     }
@@ -330,11 +364,18 @@ private fun SongList(
 @Composable
 private fun SongRow(
     song: Song,
+    isFavorite: Boolean,
     onClick: () -> Unit,
     onInfoClick: () -> Unit,
-    onAddToPlaylist: () -> Unit
+    onAddToPlaylist: () -> Unit,
+    onToggleFavorite: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val favoriteDescription = if (isFavorite) {
+        stringResource(R.string.a11y_favorite_remove)
+    } else {
+        stringResource(R.string.a11y_favorite_add)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -380,6 +421,17 @@ private fun SongRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
+            )
+        }
+        IconButton(onClick = onToggleFavorite) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                contentDescription = favoriteDescription,
+                tint = if (isFavorite) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
             )
         }
         Box {

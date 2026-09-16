@@ -50,6 +50,7 @@
     <string name="tab_genres">Géneros</string>
     <string name="tab_folders">Carpetas</string>
     <string name="tab_playlists">Playlists</string>
+    <string name="tab_favorites">Favoritos</string>
 
     <!-- Playlists -->
     <string name="playlist_new">Nueva playlist</string>
@@ -73,6 +74,8 @@
     <string name="playlist_add_songs_selected">Agregar %1$d</string>
     <string name="search_no_results">Sin resultados</string>
     <string name="action_add_to_playlist">Agregar a playlist</string>
+    <string name="favorites_empty_title">Sin favoritos</string>
+    <string name="favorites_empty_desc">Pulsa el corazón en una canción para guardarla aquí.</string>
 
     <!-- Player -->
     <string name="now_playing">En reproducción</string>
@@ -135,6 +138,8 @@
     <string name="a11y_artist_avatar">Avatar del artista</string>
     <string name="a11y_genre_icon">Icono de género</string>
     <string name="a11y_folder_icon">Icono de carpeta</string>
+    <string name="a11y_favorite_add">Agregar a favoritos</string>
+    <string name="a11y_favorite_remove">Quitar de favoritos</string>
 
     <!-- Settings -->
     <string name="settings_title">Ajustes</string>

@@ -86,6 +86,9 @@ class LibraryRepository @Inject constructor(
             list.filter { it.folderPath == path }.sortedBy { it.title.lowercase() }
         }
 
+    suspend fun songsByIds(ids: List<Long>): List<Song> =
+        songDao.getByIds(ids).map { it.toSong() }
+
     suspend fun refresh(force: Boolean = false) = withContext(Dispatchers.IO) {
         if (!force && mediaStoreScanner.shouldSkipRescan()) {
             return@withContext
