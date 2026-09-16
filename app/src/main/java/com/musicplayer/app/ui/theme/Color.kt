@@ -44,3 +44,7 @@ val ErrorDark = Color(0xFFFFB4AB)
 val OnErrorDark = Color(0xFF690005)
 val ErrorContainerDark = Color(0xFF93000A)
 val OnErrorContainerDark = Color(0xFFFFDAD6)
+
+// Colores de estado semánticos
+val FavoriteRed = Color(0xFFFF5252)
+val TimerAmber = Color(0xFFFFC107)
