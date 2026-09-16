@@ -54,12 +54,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun PlaylistDetailScreen(
     onBack: () -> Unit,
+    isPlaying: Boolean = false,
+    currentSongId: Long? = null,
     onSongClick: () -> Unit,
     viewModel: PlaylistDetailViewModel = hiltViewModel()
 ) {
@@ -144,6 +147,8 @@ fun PlaylistDetailScreen(
                     items(songs) { song ->
                         PlaylistSongRow(
                             song = song,
+                            isCurrent = song.id == currentSongId,
+                            isPlaying = isPlaying,
                             onMoveUp = { viewModel.move(song, -1) },
                             onMoveDown = { viewModel.move(song, 1) },
                             onRemove = { viewModel.removeSong(song.id) },
@@ -238,6 +243,8 @@ private fun PlaylistPlayBar(
 @Composable
 private fun PlaylistSongRow(
     song: Song,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
@@ -250,6 +257,13 @@ private fun PlaylistSongRow(
             .padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isCurrent) {
+            NowPlayingIndicator(
+                isPlaying = isPlaying,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(end = 8.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .size(40.dp)

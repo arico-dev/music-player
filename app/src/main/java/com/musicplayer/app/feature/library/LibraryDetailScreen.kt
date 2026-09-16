@@ -47,12 +47,15 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.AlbumCard
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryDetailScreen(
     onBack: () -> Unit,
+    isPlaying: Boolean = false,
+    currentSongId: Long? = null,
     onSongClick: () -> Unit = {},
     onAlbumClick: (Album) -> Unit = {},
     viewModel: LibraryDetailViewModel = hiltViewModel()
@@ -170,6 +173,8 @@ fun LibraryDetailScreen(
             items(songs, key = { it.id }) { song ->
                 DetailSongRow(
                     song = song,
+                    isCurrent = song.id == currentSongId,
+                    isPlaying = isPlaying,
                     onClick = {
                         viewModel.play(song)
                         onSongClick()
@@ -317,6 +322,8 @@ private fun ArtistArtwork(
 @Composable
 private fun DetailSongRow(
     song: Song,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
     onClick: () -> Unit
 ) {
     Row(
@@ -326,6 +333,12 @@ private fun DetailSongRow(
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isCurrent) {
+            NowPlayingIndicator(
+                isPlaying = isPlaying,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .size(48.dp)

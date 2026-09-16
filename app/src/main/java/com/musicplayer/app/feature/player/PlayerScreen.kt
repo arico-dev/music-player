@@ -108,6 +108,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.LrcLine
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
 import com.musicplayer.app.ui.theme.FavoriteRed
@@ -143,6 +144,7 @@ fun PlayerScreen(
             showQueue -> QueueSheet(
                 queue = queue,
                 currentIndex = currentIndex,
+                isPlaying = isPlaying,
                 dominantColor = dominantColor,
                 onClose = { showQueue = false },
                 onSelect = viewModel::skipToIndex,
@@ -869,6 +871,7 @@ private fun AlbumArt(
 private fun QueueSheet(
     queue: List<Song>,
     currentIndex: Int,
+    isPlaying: Boolean,
     dominantColor: Int?,
     onClose: () -> Unit,
     onSelect: (Int) -> Unit,
@@ -937,6 +940,13 @@ private fun QueueSheet(
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    if (isCurrent) {
+                        NowPlayingIndicator(
+                            isPlaying = isPlaying,
+                            color = onBase ?: MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(end = 10.dp)
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .size(44.dp)

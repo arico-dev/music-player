@@ -45,6 +45,7 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.usage.UsageData
 import com.musicplayer.app.feature.common.AlbumCard
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
 import java.time.LocalDateTime
 
@@ -121,6 +122,8 @@ fun HomeScreen(
                     item(key = "recent-${song.id}", span = { GridItemSpan(maxLineSpan) }) {
                         RecentRow(
                             song = song,
+                            isCurrent = song.id == currentSongId,
+                            isPlaying = isPlaying,
                             onClick = { onRecentSongClick(song) }
                         )
                     }
@@ -265,6 +268,8 @@ private fun ResumeCard(
 @Composable
 private fun RecentRow(
     song: Song,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
     onClick: () -> Unit
 ) {
     Row(
@@ -274,6 +279,12 @@ private fun RecentRow(
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isCurrent) {
+            NowPlayingIndicator(
+                isPlaying = isPlaying,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+        }
         Artwork(song = song, size = 44.dp)
         Spacer(modifier = Modifier.size(16.dp))
         Column(modifier = Modifier.weight(1f)) {

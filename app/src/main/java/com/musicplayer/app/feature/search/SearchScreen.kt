@@ -49,6 +49,7 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
 
@@ -56,6 +57,8 @@ import com.musicplayer.app.ui.theme.Dimens
 fun SearchScreen(
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = hiltViewModel(),
+    isPlaying: Boolean = false,
+    currentSongId: Long? = null,
     onSongClick: (Song) -> Unit = {},
     onAlbumClick: (Album) -> Unit = {},
     onArtistClick: (Artist) -> Unit = {}
@@ -91,6 +94,8 @@ fun SearchScreen(
                 )
                 else -> SearchResultsList(
                     results = results,
+                    isPlaying = isPlaying,
+                    currentSongId = currentSongId,
                     onSongClick = { song ->
                         viewModel.play(song)
                         onSongClick(song)
@@ -115,6 +120,8 @@ fun SearchScreen(
 @Composable
 private fun SearchResultsList(
     results: SearchResults,
+    isPlaying: Boolean,
+    currentSongId: Long?,
     onSongClick: (Song) -> Unit,
     onSongInfo: (Song) -> Unit,
     onAlbumClick: (Album) -> Unit,
@@ -127,6 +134,8 @@ private fun SearchResultsList(
             items(results.songs, key = { "s${it.id}" }) { song ->
                 SongRow(
                     song = song,
+                    isCurrent = song.id == currentSongId,
+                    isPlaying = isPlaying,
                     onClick = { onSongClick(song) },
                     onInfoClick = { onSongInfo(song) }
                 )
@@ -160,6 +169,8 @@ private fun SectionHeader(text: String) {
 @Composable
 private fun SongRow(
     song: Song,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
     onClick: () -> Unit,
     onInfoClick: () -> Unit
 ) {
@@ -171,6 +182,12 @@ private fun SongRow(
             .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isCurrent) {
+            NowPlayingIndicator(
+                isPlaying = isPlaying,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .size(48.dp)

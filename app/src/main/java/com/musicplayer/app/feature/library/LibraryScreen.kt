@@ -74,6 +74,7 @@ import com.musicplayer.app.core.model.Folder
 import com.musicplayer.app.core.model.Genre
 import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.core.model.Song
+import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
 
@@ -91,6 +92,8 @@ enum class LibraryTab(val labelRes: Int) {
 fun LibraryScreen(
     modifier: Modifier = Modifier,
     viewModel: LibraryViewModel = hiltViewModel(),
+    isPlaying: Boolean = false,
+    currentSongId: Long? = null,
     onSongClick: (Song) -> Unit = {},
     onAlbumClick: (Album) -> Unit = {},
     onArtistClick: (Artist) -> Unit = {},
@@ -148,6 +151,8 @@ fun LibraryScreen(
                 favoriteIds = favoriteIds,
                 favoriteSongs = favoriteSongs,
                 selectedTab = selectedTab,
+                isPlaying = isPlaying,
+                currentSongId = currentSongId,
                 onSelectTab = viewModel::selectTab,
                 onToggleFavorite = viewModel::toggleFavorite,
                 onSongClick = { song ->
@@ -186,6 +191,8 @@ private fun LibraryTabs(
     favoriteIds: List<Long>,
     favoriteSongs: List<Song>,
     selectedTab: LibraryTab,
+    isPlaying: Boolean,
+    currentSongId: Long?,
     onSelectTab: (LibraryTab) -> Unit,
     onToggleFavorite: (Song) -> Unit,
     onSongClick: (Song) -> Unit,
@@ -233,6 +240,8 @@ private fun LibraryTabs(
                     onAddToPlaylist = { songToAdd = it },
                     onToggleFavorite = onToggleFavorite,
                     favoriteSet = favoriteSet,
+                    isPlaying = isPlaying,
+                    currentSongId = currentSongId,
                     modifier = Modifier.fillMaxSize()
                 )
                 LibraryTab.ALBUMS -> AlbumGrid(
@@ -268,6 +277,8 @@ private fun LibraryTabs(
                     onAddToPlaylist = { songToAdd = it },
                     onToggleFavorite = onToggleFavorite,
                     favoriteSet = favoriteSet,
+                    isPlaying = isPlaying,
+                    currentSongId = currentSongId,
                     emptyIcon = Icons.Filled.Favorite,
                     emptyTitle = stringResource(R.string.favorites_empty_title),
                     emptySubtitle = stringResource(R.string.favorites_empty_desc),
@@ -329,6 +340,8 @@ private fun SongList(
     onAddToPlaylist: (Song) -> Unit,
     onToggleFavorite: (Song) -> Unit,
     favoriteSet: Set<Long>,
+    isPlaying: Boolean,
+    currentSongId: Long?,
     modifier: Modifier = Modifier,
     emptyIcon: androidx.compose.ui.graphics.vector.ImageVector = Icons.Filled.MusicNote,
     emptyTitle: String = stringResource(R.string.library_empty_songs_title),
@@ -352,6 +365,8 @@ private fun SongList(
             SongRow(
                 song = song,
                 isFavorite = song.id in favoriteSet,
+                isCurrent = song.id == currentSongId,
+                isPlaying = isPlaying,
                 onClick = { onSongClick(song) },
                 onInfoClick = { onSongInfo(song) },
                 onAddToPlaylist = { onAddToPlaylist(song) },
@@ -365,6 +380,8 @@ private fun SongList(
 private fun SongRow(
     song: Song,
     isFavorite: Boolean,
+    isCurrent: Boolean,
+    isPlaying: Boolean,
     onClick: () -> Unit,
     onInfoClick: () -> Unit,
     onAddToPlaylist: () -> Unit,
@@ -383,6 +400,12 @@ private fun SongRow(
             .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        if (isCurrent) {
+            NowPlayingIndicator(
+                isPlaying = isPlaying,
+                modifier = Modifier.padding(end = 10.dp)
+            )
+        }
         Box(
             modifier = Modifier
                 .size(48.dp)

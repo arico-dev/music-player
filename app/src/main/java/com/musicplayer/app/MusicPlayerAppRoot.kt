@@ -85,6 +85,7 @@ fun MusicPlayerAppRoot() {
     val navController = rememberNavController()
     val rootViewModel: RootViewModel = hiltViewModel()
     val currentSong by rootViewModel.playbackController.currentSong.collectAsStateWithLifecycle()
+    val isPlaying by rootViewModel.playbackController.isPlaying.collectAsStateWithLifecycle()
     val dominantColor by rootViewModel.dominantColor.collectAsStateWithLifecycle()
 
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -126,8 +127,6 @@ fun MusicPlayerAppRoot() {
                 .padding(innerPadding)
         ) {
             composable(Routes.HOME) {
-                val isPlaying by rootViewModel.playbackController.isPlaying.collectAsStateWithLifecycle()
-                val currentSong by rootViewModel.playbackController.currentSong.collectAsStateWithLifecycle()
                 HomeScreen(
                     isPlaying = isPlaying,
                     currentSongId = currentSong?.id,
@@ -149,6 +148,8 @@ fun MusicPlayerAppRoot() {
             }
             composable(Routes.LIBRARY) {
                 LibraryScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onSongClick = { navController.navigate(Routes.PLAYER) },
                     onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
                     onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) },
@@ -159,6 +160,8 @@ fun MusicPlayerAppRoot() {
             }
             composable(Routes.SEARCH) {
                 SearchScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onSongClick = { navController.navigate(Routes.PLAYER) },
                     onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
                     onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) }
@@ -172,6 +175,8 @@ fun MusicPlayerAppRoot() {
                 arguments = listOf(navArgument(Routes.ALBUM_ARG) { type = NavType.LongType })
             ) {
                 LibraryDetailScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) }
                 )
@@ -181,6 +186,8 @@ fun MusicPlayerAppRoot() {
                 arguments = listOf(navArgument(Routes.ARTIST_ARG) { type = NavType.LongType })
             ) {
                 LibraryDetailScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) },
                     onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) }
@@ -191,6 +198,8 @@ fun MusicPlayerAppRoot() {
                 arguments = listOf(navArgument(Routes.GENRE_ARG) { type = NavType.LongType })
             ) {
                 LibraryDetailScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) }
                 )
@@ -203,6 +212,8 @@ fun MusicPlayerAppRoot() {
                 })
             ) {
                 LibraryDetailScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) }
                 )
@@ -212,6 +223,8 @@ fun MusicPlayerAppRoot() {
                 arguments = listOf(navArgument(Routes.PLAYLIST_ARG) { type = NavType.LongType })
             ) {
                 PlaylistDetailScreen(
+                    isPlaying = isPlaying,
+                    currentSongId = currentSong?.id,
                     onBack = { navController.popBackStack() },
                     onSongClick = { navController.navigate(Routes.PLAYER) }
                 )
