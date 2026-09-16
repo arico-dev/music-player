@@ -217,8 +217,6 @@ private fun PlayerContent(
                 ) {
                     SongTitleBlock(
                         currentSong = currentSong,
-                        isFavorite = isFavorite,
-                        onToggleFavorite = onToggleFavorite,
                         onBase = onBase
                     )
                     Spacer(modifier = Modifier.height(24.dp))
@@ -243,8 +241,10 @@ private fun PlayerContent(
                     Spacer(modifier = Modifier.height(8.dp))
                     ActionChipsRow(
                         queueSize = queueSize,
+                        isFavorite = isFavorite,
                         onOpenQueue = onOpenQueue,
                         onOpenLyrics = onOpenLyrics,
+                        onToggleFavorite = onToggleFavorite,
                         onBase = onBase
                     )
                 }
@@ -268,8 +268,6 @@ private fun PlayerContent(
                 Spacer(modifier = Modifier.height(40.dp))
                 SongTitleBlock(
                     currentSong = currentSong,
-                    isFavorite = isFavorite,
-                    onToggleFavorite = onToggleFavorite,
                     onBase = onBase
                 )
                 Spacer(modifier = Modifier.height(32.dp))
@@ -294,8 +292,10 @@ private fun PlayerContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 ActionChipsRow(
                     queueSize = queueSize,
+                    isFavorite = isFavorite,
                     onOpenQueue = onOpenQueue,
                     onOpenLyrics = onOpenLyrics,
+                    onToggleFavorite = onToggleFavorite,
                     onBase = onBase
                 )
             }
@@ -306,48 +306,21 @@ private fun PlayerContent(
 @Composable
 private fun SongTitleBlock(
     currentSong: Song?,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
     onBase: Color
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.animateContentSize()
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AnimatedContent(
-                targetState = currentSong?.title ?: "Nada sonando",
-                modifier = Modifier.weight(1f, fill = false),
-                label = "title"
-            ) { title ->
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = onBase,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
-                )
-            }
-            if (currentSong != null) {
-                Spacer(modifier = Modifier.size(4.dp))
-                val favoriteDescription = if (isFavorite) {
-                    stringResource(R.string.a11y_favorite_remove)
-                } else {
-                    stringResource(R.string.a11y_favorite_add)
-                }
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = favoriteDescription,
-                        tint = if (isFavorite) Color(0xFFFF5252) else onBase.copy(alpha = 0.8f)
-                    )
-                }
-            }
+        AnimatedContent(targetState = currentSong?.title ?: "Nada sonando", label = "title") { title ->
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                color = onBase,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
         }
         AnimatedContent(targetState = currentSong?.artist ?: "", label = "artist") { artist ->
             Text(
@@ -543,8 +516,10 @@ private fun PlayerControlsRow(
 @Composable
 private fun ActionChipsRow(
     queueSize: Int,
+    isFavorite: Boolean,
     onOpenQueue: () -> Unit,
     onOpenLyrics: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onBase: Color
 ) {
     Row(
@@ -565,6 +540,20 @@ private fun ActionChipsRow(
             onClick = onOpenLyrics,
             onBase = onBase
         )
+        Spacer(modifier = Modifier.size(12.dp))
+        val favoriteDescription = if (isFavorite) {
+            stringResource(R.string.a11y_favorite_remove)
+        } else {
+            stringResource(R.string.a11y_favorite_add)
+        }
+        ActionChip(
+            icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+            text = stringResource(R.string.favorite),
+            onClick = onToggleFavorite,
+            onBase = onBase,
+            iconTint = if (isFavorite) Color(0xFFFF5252) else null,
+            contentDescription = favoriteDescription
+        )
     }
 }
 
@@ -573,7 +562,9 @@ private fun ActionChip(
     icon: ImageVector,
     text: String,
     onClick: () -> Unit,
-    onBase: Color
+    onBase: Color,
+    iconTint: Color? = null,
+    contentDescription: String? = null
 ) {
     Row(
         modifier = Modifier
@@ -585,8 +576,8 @@ private fun ActionChip(
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = text,
-            tint = onBase.copy(alpha = 0.8f)
+            contentDescription = contentDescription ?: text,
+            tint = iconTint ?: onBase.copy(alpha = 0.8f)
         )
         Spacer(modifier = Modifier.size(6.dp))
         Text(

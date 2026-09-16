@@ -74,6 +74,7 @@
     <string name="playlist_add_songs_selected">Agregar %1$d</string>
     <string name="search_no_results">Sin resultados</string>
     <string name="action_add_to_playlist">Agregar a playlist</string>
+    <string name="favorite">Favorita</string>
     <string name="favorites_empty_title">Sin favoritos</string>
     <string name="favorites_empty_desc">Pulsa el corazón en una canción para guardarla aquí.</string>
 
