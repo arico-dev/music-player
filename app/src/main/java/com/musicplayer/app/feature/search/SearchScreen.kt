@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -32,6 +31,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -310,8 +310,12 @@ private fun AlbumRow(
 @Composable
 private fun ArtistRow(
     artist: Artist,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    viewModel: SearchViewModel = hiltViewModel()
 ) {
+    val imageUrl by produceState<String?>(initialValue = null, artist.id) {
+        value = viewModel.getArtistImageUrl(artist)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -326,11 +330,20 @@ private fun ArtistRow(
                 .background(MaterialTheme.colorScheme.primaryContainer),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = artist.name.take(1).uppercase(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = stringResource(R.string.a11y_artist_avatar),
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            } else {
+                Text(
+                    text = artist.name.take(1).uppercase(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
         Spacer(modifier = Modifier.size(16.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -348,11 +361,6 @@ private fun ArtistRow(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        Icon(
-            imageVector = Icons.Default.Person,
-            contentDescription = stringResource(R.string.a11y_artist_avatar),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

@@ -102,7 +102,7 @@ class PlayerViewModel @Inject constructor(
                             .coerceAtLeast(0)
                     }
                     ?.takeIf { it > 0 }
-                delay(500)
+                delay(250)
             }
         }
     }

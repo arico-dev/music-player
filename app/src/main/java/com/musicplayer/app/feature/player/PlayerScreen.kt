@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -513,8 +514,18 @@ private fun SeekRow(
             animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
             label = "seekThumb"
         )
-        val sliderValue = dragValue ?: position.toFloat().coerceIn(0f, duration.toFloat())
-        val timeLabel = (dragValue?.toLong() ?: position)
+        val targetPosition = position.toFloat().coerceIn(0f, duration.toFloat())
+        val animatedPosition by animateFloatAsState(
+            targetValue = targetPosition,
+            animationSpec = if (!isDragging) {
+                tween(durationMillis = 500, easing = LinearEasing)
+            } else {
+                tween(durationMillis = 0)
+            },
+            label = "seekPosition"
+        )
+        val sliderValue = dragValue ?: animatedPosition.coerceIn(0f, duration.toFloat())
+        val timeLabel = (dragValue ?: animatedPosition).toLong()
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -720,45 +731,51 @@ private fun ActionChipsRow(
     onCancelSleepTimer: () -> Unit,
     onBase: Color
 ) {
-    Row(
+    LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+        horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+        contentPadding = PaddingValues(horizontal = 16.dp)
     ) {
-        ActionChip(
-            icon = Icons.Filled.QueueMusic,
-            text = if (queueSize > 0) "Cola ($queueSize)" else "Cola",
-            onClick = onOpenQueue,
-            onBase = onBase
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        ActionChip(
-            icon = Icons.Filled.Lyrics,
-            text = stringResource(R.string.lyrics),
-            onClick = onOpenLyrics,
-            onBase = onBase
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        val favoriteDescription = if (isFavorite) {
-            stringResource(R.string.a11y_favorite_remove)
-        } else {
-            stringResource(R.string.a11y_favorite_add)
+        item {
+            ActionChip(
+                icon = Icons.Filled.QueueMusic,
+                text = if (queueSize > 0) "Cola ($queueSize)" else "Cola",
+                onClick = onOpenQueue,
+                onBase = onBase
+            )
         }
-        ActionChip(
-            icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-            text = stringResource(R.string.favorite),
-            onClick = onToggleFavorite,
-            onBase = onBase,
-            iconTint = if (isFavorite) FavoriteRed else null,
-            contentDescription = favoriteDescription
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        SleepTimerChip(
-            remainingSeconds = sleepTimerRemaining,
-            onSetSleepTimer = onSetSleepTimer,
-            onCancelSleepTimer = onCancelSleepTimer,
-            onBase = onBase
-        )
+        item {
+            ActionChip(
+                icon = Icons.Filled.Lyrics,
+                text = stringResource(R.string.lyrics),
+                onClick = onOpenLyrics,
+                onBase = onBase
+            )
+        }
+        item {
+            val favoriteDescription = if (isFavorite) {
+                stringResource(R.string.a11y_favorite_remove)
+            } else {
+                stringResource(R.string.a11y_favorite_add)
+            }
+            ActionChip(
+                icon = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                text = stringResource(R.string.favorite),
+                onClick = onToggleFavorite,
+                onBase = onBase,
+                iconTint = if (isFavorite) FavoriteRed else null,
+                contentDescription = favoriteDescription
+            )
+        }
+        item {
+            SleepTimerChip(
+                remainingSeconds = sleepTimerRemaining,
+                onSetSleepTimer = onSetSleepTimer,
+                onCancelSleepTimer = onCancelSleepTimer,
+                onBase = onBase
+            )
+        }
     }
 }
 

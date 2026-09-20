@@ -6,6 +6,7 @@ import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.core.model.SongMetadata
+import com.musicplayer.app.data.artist.ArtistImageRepository
 import com.musicplayer.app.data.mediastore.MetadataReader
 import com.musicplayer.app.data.repository.LibraryRepository
 import com.musicplayer.app.player.PlaybackController
@@ -39,7 +40,8 @@ data class SearchResults(
 class SearchViewModel @Inject constructor(
     private val repository: LibraryRepository,
     private val playbackController: PlaybackController,
-    private val metadataReader: MetadataReader
+    private val metadataReader: MetadataReader,
+    private val artistImageRepository: ArtistImageRepository
 ) : ViewModel() {
 
     private val _query = MutableStateFlow("")
@@ -103,4 +105,7 @@ class SearchViewModel @Inject constructor(
     fun dismissSongInfo() {
         _songInfo.value = null
     }
+
+    suspend fun getArtistImageUrl(artist: Artist): String? =
+        withContext(Dispatchers.IO) { artistImageRepository.imageUrl(artist.id, artist.name) }
 }
