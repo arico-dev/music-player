@@ -16,22 +16,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,7 +50,6 @@ import com.musicplayer.app.feature.common.AlbumCard
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LibraryDetailScreen(
     onBack: () -> Unit,
@@ -65,59 +64,85 @@ fun LibraryDetailScreen(
     val artistAlbums by viewModel.artistAlbums.collectAsStateWithLifecycle()
     val artistImageUrl by viewModel.artistImageUrl.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(text = header?.name ?: "") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
+    Scaffold { innerPadding ->
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (viewModel.isArtist) {
+                if (artistAlbums.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.search_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                } else {
+                    BoxWithConstraints(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) {
+                        val columns = when {
+                            maxWidth >= 900.dp -> 4
+                            maxWidth >= 620.dp -> 3
+                            else -> 2
+                        }
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(columns),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                DetailHeader(header = header, artistImageUrl = artistImageUrl, isArtist = true)
+                            }
+                            item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                                Button(
+                                    onClick = { viewModel.playFrom(0) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                                ) {
+                                    Text(stringResource(R.string.play))
+                                }
+                            }
+                            items(artistAlbums, key = { it.id }) { album ->
+                                AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                            }
+                        }
+                    }
                 }
-            )
-        }
-    ) { innerPadding ->
-        // Artist: muestra grid de álbumes, no canciones
-        if (viewModel.isArtist) {
-            if (artistAlbums.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
+} else if (songs.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
                     Text(
                         text = stringResource(R.string.search_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                return@Scaffold
-            }
-            BoxWithConstraints(
+            } else {
+LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(bottom = 24.dp)
             ) {
-                val columns = when {
-                    maxWidth >= 900.dp -> 4
-                    maxWidth >= 620.dp -> 3
-                    else -> 2
-                }
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(columns),
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
-                        DetailHeader(header = header, artistImageUrl = artistImageUrl, isArtist = true)
+                    item {
+                        DetailHeader(header = header, artistImageUrl = null, isArtist = false)
                     }
-                    item(span = { androidx.compose.foundation.lazy.grid.GridItemSpan(maxLineSpan) }) {
+                    item {
                         Button(
                             onClick = { viewModel.playFrom(0) },
                             modifier = Modifier
@@ -127,61 +152,49 @@ fun LibraryDetailScreen(
                             Text(stringResource(R.string.play))
                         }
                     }
-                    items(artistAlbums, key = { it.id }) { album ->
-                        AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                    items(songs, key = { it.id }) { song ->
+                        DetailSongRow(
+                            song = song,
+                            isCurrent = song.id == currentSongId,
+                            isPlaying = isPlaying,
+                            onClick = {
+                                viewModel.play(song)
+                                onSongClick()
+                            }
+                        )
                     }
                 }
             }
-            return@Scaffold
-        }
 
-        if (songs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = stringResource(R.string.search_empty),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            return@Scaffold
+            DetailBackButton(
+                onBack = onBack,
+                modifier = Modifier.align(Alignment.TopStart)
+            )
         }
+    }
+}
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(bottom = 24.dp)
-        ) {
-            item {
-                DetailHeader(header = header, artistImageUrl = null, isArtist = false)
-            }
-            item {
-                Button(
-                    onClick = { viewModel.playFrom(0) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    Text(stringResource(R.string.play))
-                }
-            }
-            items(songs, key = { it.id }) { song ->
-                DetailSongRow(
-                    song = song,
-                    isCurrent = song.id == currentSongId,
-                    isPlaying = isPlaying,
-                    onClick = {
-                        viewModel.play(song)
-                        onSongClick()
-                    }
-                )
-            }
-        }
+@Composable
+private fun DetailBackButton(
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    IconButton(
+        onClick = onBack,
+        modifier = modifier
+            .padding(8.dp)
+            .size(44.dp)
+            .shadow(4.dp, CircleShape)
+            .background(
+                MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                CircleShape
+            )
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "Volver",
+            tint = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -193,7 +206,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 16.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -205,7 +218,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
                         modifier = Modifier.size(180.dp)
                     )
                 }
-                Spacer(modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.size(16.dp))
                 Column {
                     Text(
                         text = header.name,
@@ -213,7 +226,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.size(4.dp))
+                    Spacer(modifier = Modifier.size(2.dp))
                     Text(
                         text = header.subtitle,
                         style = MaterialTheme.typography.bodyMedium,
@@ -227,7 +240,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (isArtist) {
@@ -238,14 +251,14 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
                         modifier = Modifier.fillMaxWidth(0.7f)
                     )
                 }
-                Spacer(modifier = Modifier.size(12.dp))
+                Spacer(modifier = Modifier.size(8.dp))
                 Text(
                     text = header.name,
                     style = MaterialTheme.typography.headlineSmall,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.size(4.dp))
+                Spacer(modifier = Modifier.size(2.dp))
                 Text(
                     text = header.subtitle,
                     style = MaterialTheme.typography.bodyMedium,

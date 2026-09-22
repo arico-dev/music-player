@@ -82,6 +82,7 @@
 
     <!-- Player -->
     <string name="now_playing">En reproducción</string>
+    <string name="player_now_playing">NOW PLAYING</string>
     <string name="no_track_selected">Ninguna canción seleccionada</string>
     <string name="shuffle">Aleatorio</string>
     <string name="repeat">Repetir</string>

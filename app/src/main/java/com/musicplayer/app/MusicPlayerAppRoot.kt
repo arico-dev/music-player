@@ -142,7 +142,10 @@ fun MusicPlayerAppRoot() {
             startDestination = Routes.HOME,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .then(
+                    if (isFullScreen) Modifier
+                    else Modifier.padding(innerPadding)
+                )
         ) {
             composable(Routes.HOME) {
                 HomeScreen(
