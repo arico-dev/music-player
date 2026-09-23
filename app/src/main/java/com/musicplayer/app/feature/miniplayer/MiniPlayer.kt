@@ -1,9 +1,7 @@
 package com.musicplayer.app.feature.miniplayer
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -211,12 +209,7 @@ private fun MiniPlayerContent(
             }
         }
         if (duration > 0) {
-            val rawFraction = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
-            val fraction by animateFloatAsState(
-                targetValue = rawFraction,
-                animationSpec = tween(durationMillis = 500, easing = LinearEasing),
-                label = "miniProgress"
-            )
+            val fraction = (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
             val trackInactive = (onBase ?: MaterialTheme.colorScheme.onSurfaceVariant).copy(alpha = 0.25f)
             val trackActive = onBase ?: MaterialTheme.colorScheme.primary
             Canvas(

@@ -8,11 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.musicplayer.app.R
+import com.musicplayer.app.LocalBottomReserved
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Artist
 import com.musicplayer.app.core.model.Song
@@ -67,7 +71,12 @@ fun SearchScreen(
     val results by viewModel.results.collectAsStateWithLifecycle()
     val songInfo by viewModel.songInfo.collectAsStateWithLifecycle()
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(bottom = LocalBottomReserved.current)
+    ) {
         TextField(
             value = query,
             onValueChange = viewModel::onQueryChange,

@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -125,6 +126,7 @@ import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
 import com.musicplayer.app.ui.theme.FavoriteRed
 import com.musicplayer.app.ui.theme.TimerAmber
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun PlayerScreen(
@@ -132,8 +134,6 @@ fun PlayerScreen(
 ) {
     val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
     val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    val position by viewModel.position.collectAsStateWithLifecycle()
-    val duration by viewModel.duration.collectAsStateWithLifecycle()
     val queue by viewModel.queue.collectAsStateWithLifecycle()
     val currentIndex by viewModel.currentIndex.collectAsStateWithLifecycle()
     val isShuffled by viewModel.isShuffled.collectAsStateWithLifecycle()
@@ -151,7 +151,9 @@ fun PlayerScreen(
     BackHandler(enabled = showQueue || showLyrics) {
         if (showQueue) showQueue = false else if (showLyrics) showLyrics = false
     }
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
         when {
             showQueue -> QueueSheet(
                 queue = queue,
@@ -164,8 +166,8 @@ fun PlayerScreen(
             )
             showLyrics -> LyricsSheet(
                 lyrics = lyrics,
-                position = position,
-                duration = duration,
+                position = viewModel.position,
+                duration = viewModel.duration,
                 dominantColor = dominantColor,
                 onClose = { showLyrics = false },
                 onSeek = viewModel::seekTo,
@@ -176,8 +178,8 @@ fun PlayerScreen(
                 isPlaying = isPlaying,
                 isFavorite = isFavorite,
                 sleepTimerRemaining = sleepTimerRemaining,
-                position = position,
-                duration = duration,
+                position = viewModel.position,
+                duration = viewModel.duration,
                 isShuffled = isShuffled,
                 repeatMode = repeatMode,
                 dominantColor = dominantColor,
@@ -225,28 +227,6 @@ private fun AtmosphericBackground(
                     .fillMaxSize()
                     .background(Color.Black.copy(alpha = 0.45f))
             )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)
-                        )
-                    )
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(130.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.6f))
-                        )
-                    )
-            )
         }
     } else {
         Box(
@@ -263,8 +243,8 @@ private fun PlayerContent(
     isPlaying: Boolean,
     isFavorite: Boolean,
     sleepTimerRemaining: Int?,
-    position: Long,
-    duration: Long,
+    position: StateFlow<Long>,
+    duration: StateFlow<Long>,
     isShuffled: Boolean,
     repeatMode: Int,
     dominantColor: Int?,
@@ -338,6 +318,7 @@ private fun PlayerContent(
                 ) {
                     SongTitleBlock(
                         currentSong = currentSong,
+                        isPlaying = isPlaying,
                         onBase = onBase
                     )
                     Spacer(modifier = Modifier.height(24.dp))
@@ -396,6 +377,7 @@ private fun PlayerContent(
                 Spacer(modifier = Modifier.height(40.dp))
                 SongTitleBlock(
                     currentSong = currentSong,
+                    isPlaying = isPlaying,
                     onBase = onBase
                 )
                 Spacer(modifier = Modifier.height(32.dp))
@@ -437,6 +419,7 @@ private fun PlayerContent(
 @Composable
 private fun SongTitleBlock(
     currentSong: Song?,
+    isPlaying: Boolean,
     onBase: Color
 ) {
     Column(
@@ -454,6 +437,7 @@ private fun SongTitleBlock(
                 text = title,
                 style = MaterialTheme.typography.headlineSmall,
                 color = onBase,
+                isPlaying = isPlaying,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
@@ -477,6 +461,7 @@ private fun MarqueeText(
     text: String,
     style: TextStyle,
     color: Color,
+    isPlaying: Boolean,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -496,50 +481,62 @@ private fun MarqueeText(
         1f
     ) == 0f
     val scrollDistance = if (containerWidthPx > 0) measuredWidthPx - containerWidthPx else 0
-    val shouldScroll = !reduceMotion && scrollDistance > 0
-    val infiniteTransition = rememberInfiniteTransition(label = "marquee")
-    val animatedX by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (shouldScroll) -scrollDistance.toFloat() else 0f,
-        animationSpec = if (shouldScroll) {
-            infiniteRepeatable(
-                animation = tween(durationMillis = 8_000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            )
-        } else {
-            infiniteRepeatable(animation = tween(durationMillis = 1))
-        },
-        label = "marqueeX"
-    )
+    val shouldScroll = isPlaying && !reduceMotion && scrollDistance > 0
     Box(
         modifier = modifier
             .onSizeChanged { containerWidthPx = it.width }
             .clipToBounds()
     ) {
-        Text(
-            text = text,
-            style = style,
-            color = color,
-            maxLines = 1,
-            softWrap = false,
-            overflow = TextOverflow.Clip,
-            modifier = Modifier
-                .align(if (shouldScroll) Alignment.CenterStart else Alignment.Center)
-                .width(with(density) { measuredWidthPx.toDp() })
-                .graphicsLayer { translationX = animatedX }
-        )
+        if (shouldScroll) {
+            val infiniteTransition = rememberInfiniteTransition(label = "marquee")
+            val animatedX = infiniteTransition.animateFloat(
+                initialValue = 0f,
+                targetValue = -scrollDistance.toFloat(),
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 8_000, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart
+                ),
+                label = "marqueeX"
+            )
+            Text(
+                text = text,
+                style = style,
+                color = color,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .width(with(density) { measuredWidthPx.toDp() })
+                    .graphicsLayer { translationX = animatedX.value }
+            )
+        } else {
+            Text(
+                text = text,
+                style = style,
+                color = color,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .width(with(density) { measuredWidthPx.toDp() })
+            )
+        }
     }
 }
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun SeekRow(
-    position: Long,
-    duration: Long,
+    position: StateFlow<Long>,
+    duration: StateFlow<Long>,
     onSeek: (Long) -> Unit,
     onBase: Color
 ) {
-    if (duration > 0) {
+    val durationMs by duration.collectAsStateWithLifecycle()
+    val positionMs by position.collectAsStateWithLifecycle()
+    if (durationMs > 0) {
         var dragValue by remember { mutableStateOf<Float?>(null) }
         var isDragging by remember { mutableStateOf(false) }
         val interactionSource = remember { MutableInteractionSource() }
@@ -548,7 +545,7 @@ private fun SeekRow(
             animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
             label = "seekThumb"
         )
-        val targetPosition = position.toFloat().coerceIn(0f, duration.toFloat())
+        val targetPosition = positionMs.toFloat().coerceIn(0f, durationMs.toFloat())
         val animatedPosition by animateFloatAsState(
             targetValue = targetPosition,
             animationSpec = if (!isDragging) {
@@ -558,7 +555,7 @@ private fun SeekRow(
             },
             label = "seekPosition"
         )
-        val sliderValue = dragValue ?: animatedPosition.coerceIn(0f, duration.toFloat())
+        val sliderValue = dragValue ?: animatedPosition.coerceIn(0f, durationMs.toFloat())
         val timeLabel = (dragValue ?: animatedPosition).toLong()
         Box(
             modifier = Modifier
@@ -577,7 +574,7 @@ private fun SeekRow(
                     dragValue = null
                     isDragging = false
                 },
-                valueRange = 0f..duration.toFloat(),
+                valueRange = 0f..durationMs.toFloat(),
                 interactionSource = interactionSource,
                 colors = SliderDefaults.colors(
                     thumbColor = onBase,
@@ -592,7 +589,7 @@ private fun SeekRow(
                     )
                 },
                 track = {
-                    val fraction = (sliderValue / duration.toFloat()).coerceIn(0f, 1f)
+                    val fraction = (sliderValue / durationMs.toFloat()).coerceIn(0f, 1f)
                     Canvas(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -626,7 +623,7 @@ private fun SeekRow(
                 color = onBase.copy(alpha = 0.8f)
             )
             Text(
-                text = formatTime(duration),
+                text = formatTime(durationMs),
                 style = MaterialTheme.typography.labelMedium,
                 color = onBase.copy(alpha = 0.8f)
             )
@@ -905,8 +902,8 @@ private fun AlbumArt(
     artUri: String?,
     isPlaying: Boolean,
     onBase: Color,
-    positionMs: Long,
-    durationMs: Long,
+    positionMs: StateFlow<Long>,
+    durationMs: StateFlow<Long>,
     onSeek: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -922,7 +919,7 @@ private fun AlbumArt(
                 detectTapGestures(
                     onDoubleTap = { offset ->
                         val delta = if (offset.x < size.width / 2f) -10_000L else 10_000L
-                        val target = (positionMs + delta).coerceIn(0L, durationMs)
+                        val target = (positionMs.value + delta).coerceIn(0L, durationMs.value)
                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         onSeek(target)
                     }
@@ -1097,8 +1094,8 @@ private fun QueueSheet(
 @Composable
 private fun LyricsSheet(
     lyrics: LyricsUiState,
-    position: Long,
-    duration: Long,
+    position: StateFlow<Long>,
+    duration: StateFlow<Long>,
     dominantColor: Int?,
     onClose: () -> Unit,
     onSeek: (Long) -> Unit,
@@ -1110,6 +1107,8 @@ private fun LyricsSheet(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.navigationBars)
             .background(
                 if (baseColor != null) {
                     Brush.verticalGradient(
@@ -1213,11 +1212,13 @@ private fun LyricsCenteredMessage(
 @Composable
 private fun PlainLyrics(
     text: String,
-    position: Long,
-    duration: Long,
+    position: StateFlow<Long>,
+    duration: StateFlow<Long>,
     accent: Color?,
     inactiveColor: Color
 ) {
+    val durationMs by duration.collectAsStateWithLifecycle()
+    val positionMs by position.collectAsStateWithLifecycle()
     val activeBackground = if (accent != null) {
         if (accent.luminance() < 0.25f) accent.lighten(0.45f) else accent.lighten(0.12f)
     } else {
@@ -1237,8 +1238,8 @@ private fun PlainLyrics(
         return
     }
 
-    val perLineMs = if (duration > 0) duration / lines.size else PLAIN_LINE_FALLBACK_MS
-    val rawIndex = (position / perLineMs).toInt()
+    val perLineMs = if (durationMs > 0) durationMs / lines.size else PLAIN_LINE_FALLBACK_MS
+    val rawIndex = (positionMs / perLineMs).toInt()
     val currentIndex = rawIndex.coerceIn(0, lines.lastIndex)
 
     val listState = rememberLazyListState()
@@ -1276,11 +1277,12 @@ private fun PlainLyrics(
 @Composable
 private fun SyncedLyrics(
     lines: List<LrcLine>,
-    position: Long,
+    position: StateFlow<Long>,
     onSeek: (Long) -> Unit,
     accent: Color?,
     inactiveColor: Color
 ) {
+    val positionMs by position.collectAsStateWithLifecycle()
     val activeBackground = if (accent != null) {
         if (accent.luminance() < 0.25f) accent.lighten(0.45f) else accent.lighten(0.12f)
     } else {
@@ -1289,7 +1291,7 @@ private fun SyncedLyrics(
     val activeText = if (activeBackground.luminance() > 0.5f) Color.Black else Color.White
 
     val listState = rememberLazyListState()
-    var currentIndex = lines.indexOfLast { it.timeMs <= position }
+    var currentIndex = lines.indexOfLast { it.timeMs <= positionMs }
     if (currentIndex < 0) currentIndex = 0
 
     LaunchedEffect(currentIndex, lines) {

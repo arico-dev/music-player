@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -44,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.musicplayer.app.R
+import com.musicplayer.app.LocalBottomReserved
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.data.usage.UsageData
@@ -73,7 +77,11 @@ fun HomeScreen(
 
     val now = LocalDateTime.now()
 
-    BoxWithConstraints(modifier = modifier) {
+    BoxWithConstraints(
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(bottom = LocalBottomReserved.current)
+    ) {
         val columns = when {
             maxWidth >= 900.dp -> 4
             maxWidth >= 620.dp -> 3

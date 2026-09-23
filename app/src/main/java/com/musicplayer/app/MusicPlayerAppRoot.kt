@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -19,22 +20,26 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,6 +102,19 @@ data class BottomTab(
     val labelRes: Int
 )
 
+/** Altura fija reservada para el mini-player en el overlay inferior. */
+private val MiniSlotDp = 72.dp
+
+/** Altura fija reservada para la barra de navegación inferior. */
+private val BarSlotDp = 100.dp
+
+/**
+ * Padding inferior que las pantallas no-fullscreen deben dejar libres para no
+ * quedar tapadas por el overlay (mini-player + barra inferior + inset de nav).
+ * Es constante para que ningún elemento de la UI se mueva al navegar.
+ */
+val LocalBottomReserved = staticCompositionLocalOf { 0.dp }
+
 @Composable
 fun MusicPlayerAppRoot() {
     val navController = rememberNavController()
@@ -109,161 +127,192 @@ fun MusicPlayerAppRoot() {
     val currentRoute = backStackEntry?.destination?.route
     val isFullScreen = currentRoute in Routes.fullScreenRoutes
 
-    CompositionLocalProvider(LocalOverscrollFactory provides null) {
-        Scaffold(
-            bottomBar = {
-            if (!isFullScreen) {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    if (currentSong != null) {
-                        MiniPlayer(
-                            playbackController = rootViewModel.playbackController,
-                            dominantColor = dominantColor,
-                            onClick = { navController.navigate(Routes.PLAYER) }
-                        )
-                    }
-                    BottomBar(
-                        currentRoute = currentRoute,
-                        onSelect = { route ->
-                            navController.navigate(route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
+    val density = LocalDensity.current
+    val bottomReserved: Dp = with(density) {
+        (
+            MiniSlotDp.roundToPx() +
+                BarSlotDp.roundToPx() +
+                WindowInsets.navigationBars.getBottom(this)
+            ).toDp()
+    }
+
+    CompositionLocalProvider(
+        LocalOverscrollFactory provides null,
+        LocalBottomReserved provides bottomReserved
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
+            CompositionLocalProvider(
+                LocalContentColor provides MaterialTheme.colorScheme.onBackground
+            ) {
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.HOME,
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                composable(Routes.HOME) {
+                    HomeScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onResumeSession = {
+                            rootViewModel.playbackController.resumeLastSession()
+                            navController.navigate(Routes.PLAYER)
+                        },
+                        onTogglePlayPause = {
+                            rootViewModel.playbackController.togglePlayPause()
+                        },
+                        onRecentSongClick = { song ->
+                            rootViewModel.playbackController.playSongs(listOf(song))
+                            navController.navigate(Routes.PLAYER)
+                        },
+                        onAlbumClick = { album ->
+                            navController.navigate(Routes.albumRoute(album.id))
                         }
                     )
                 }
-            }
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Routes.HOME,
-            modifier = Modifier
-                .fillMaxSize()
-                .then(
-                    if (isFullScreen) Modifier
-                    else Modifier.padding(innerPadding)
-                )
-        ) {
-            composable(Routes.HOME) {
-                HomeScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onResumeSession = {
-                        rootViewModel.playbackController.resumeLastSession()
-                        navController.navigate(Routes.PLAYER)
-                    },
-                    onTogglePlayPause = {
-                        rootViewModel.playbackController.togglePlayPause()
-                    },
-                    onRecentSongClick = { song ->
-                        rootViewModel.playbackController.playSongs(listOf(song))
-                        navController.navigate(Routes.PLAYER)
-                    },
-                    onAlbumClick = { album ->
-                        navController.navigate(Routes.albumRoute(album.id))
-                    }
-                )
-            }
-            composable(Routes.LIBRARY) {
-                LibraryScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onSongClick = { navController.navigate(Routes.PLAYER) },
-                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
-                    onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) },
-                    onGenreClick = { genre -> navController.navigate(Routes.genreRoute(genre.id)) },
-                    onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) },
-                    onPlaylistClick = { playlist -> navController.navigate(Routes.playlistRoute(playlist.id)) }
-                )
-            }
-            composable(Routes.SEARCH) {
-                SearchScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onSongClick = { navController.navigate(Routes.PLAYER) },
-                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
-                    onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) }
-                )
-            }
-            composable(Routes.SETTINGS) { SettingsScreen() }
-            composable(Routes.PLAYER) { PlayerScreen() }
+                composable(Routes.LIBRARY) {
+                    LibraryScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onSongClick = { navController.navigate(Routes.PLAYER) },
+                        onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
+                        onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) },
+                        onGenreClick = { genre -> navController.navigate(Routes.genreRoute(genre.id)) },
+                        onFolderClick = { folder -> navController.navigate(Routes.folderRoute(folder.path)) },
+                        onPlaylistClick = { playlist -> navController.navigate(Routes.playlistRoute(playlist.id)) }
+                    )
+                }
+                composable(Routes.SEARCH) {
+                    SearchScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onSongClick = { navController.navigate(Routes.PLAYER) },
+                        onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) },
+                        onArtistClick = { artist -> navController.navigate(Routes.artistRoute(artist.id)) }
+                    )
+                }
+                composable(Routes.SETTINGS) { SettingsScreen() }
+                composable(Routes.PLAYER) { PlayerScreen() }
 
-            composable(
-                route = Routes.ALBUM,
-                arguments = listOf(navArgument(Routes.ALBUM_ARG) { type = NavType.LongType })
-            ) {
-                LibraryDetailScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
-                )
+                composable(
+                    route = Routes.ALBUM,
+                    arguments = listOf(navArgument(Routes.ALBUM_ARG) { type = NavType.LongType })
+                ) {
+                    LibraryDetailScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onBack = { navController.popBackStack() },
+                        onSongClick = { navController.navigate(Routes.PLAYER) }
+                    )
+                }
+                composable(
+                    route = Routes.ARTIST,
+                    arguments = listOf(navArgument(Routes.ARTIST_ARG) { type = NavType.LongType })
+                ) {
+                    LibraryDetailScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onBack = { navController.popBackStack() },
+                        onSongClick = { navController.navigate(Routes.PLAYER) },
+                        onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) }
+                    )
+                }
+                composable(
+                    route = Routes.GENRE,
+                    arguments = listOf(navArgument(Routes.GENRE_ARG) { type = NavType.LongType })
+                ) {
+                    LibraryDetailScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onBack = { navController.popBackStack() },
+                        onSongClick = { navController.navigate(Routes.PLAYER) }
+                    )
+                }
+                composable(
+                    route = Routes.FOLDER,
+                    arguments = listOf(navArgument(Routes.FOLDER_ARG) {
+                        type = NavType.StringType
+                        defaultValue = ""
+                    })
+                ) {
+                    LibraryDetailScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onBack = { navController.popBackStack() },
+                        onSongClick = { navController.navigate(Routes.PLAYER) }
+                    )
+                }
+                composable(
+                    route = Routes.PLAYLIST,
+                    arguments = listOf(navArgument(Routes.PLAYLIST_ARG) { type = NavType.LongType })
+                ) {
+                    PlaylistDetailScreen(
+                        isPlaying = isPlaying,
+                        currentSongId = currentSong?.id,
+                        onBack = { navController.popBackStack() },
+                        onSongClick = { navController.navigate(Routes.PLAYER) }
+                    )
+                }
             }
-            composable(
-                route = Routes.ARTIST,
-                arguments = listOf(navArgument(Routes.ARTIST_ARG) { type = NavType.LongType })
-            ) {
-                LibraryDetailScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) },
-                    onAlbumClick = { album -> navController.navigate(Routes.albumRoute(album.id)) }
-                )
             }
-            composable(
-                route = Routes.GENRE,
-                arguments = listOf(navArgument(Routes.GENRE_ARG) { type = NavType.LongType })
-            ) {
-                LibraryDetailScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
-                )
-            }
-            composable(
-                route = Routes.FOLDER,
-                arguments = listOf(navArgument(Routes.FOLDER_ARG) {
-                    type = NavType.StringType
-                    defaultValue = ""
-                })
-            ) {
-                LibraryDetailScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
-                )
-            }
-            composable(
-                route = Routes.PLAYLIST,
-                arguments = listOf(navArgument(Routes.PLAYLIST_ARG) { type = NavType.LongType })
-            ) {
-                PlaylistDetailScreen(
-                    isPlaying = isPlaying,
-                    currentSongId = currentSong?.id,
-                    onBack = { navController.popBackStack() },
-                    onSongClick = { navController.navigate(Routes.PLAYER) }
-                )
+
+            if (!isFullScreen) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(MiniSlotDp)
+                    ) {
+                        if (currentSong != null) {
+                            MiniPlayer(
+                                playbackController = rootViewModel.playbackController,
+                                dominantColor = dominantColor,
+                                onClick = { navController.navigate(Routes.PLAYER) },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(BarSlotDp)
+                    ) {
+                        BottomBar(
+                            currentRoute = currentRoute,
+                            onSelect = { route ->
+                                navController.navigate(route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
             }
         }
-    }
     }
 }
 
 @Composable
 private fun BottomBar(
     currentRoute: String?,
-    onSelect: (String) -> Unit
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.navigationBars)
+        modifier = modifier
             .padding(horizontal = 24.dp, vertical = 10.dp)
             .shadow(8.dp, Dimens.RadiusPill)
             .clip(Dimens.RadiusPill)

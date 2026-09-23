@@ -191,13 +191,13 @@ fun PlaylistDetailScreen(
                     Text(stringResource(R.string.playlist_delete))
                 }
             },
-            dismissButton = {
-                TextButton(onClick = { showDelete = false }) {
-                    Text(stringResource(R.string.playlist_cancel))
+dismissButton = {
+                    TextButton(onClick = { showDelete = false }) {
+                        Text(stringResource(R.string.playlist_cancel))
+                    }
                 }
-            }
-        )
-    }
+            )
+        }
 
     if (showAddSongs) {
         AddSongsSheet(
