@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -966,34 +967,23 @@ private fun QueueSheet(
     onSelect: (Int) -> Unit,
     onInfo: (Song) -> Unit
 ) {
-    val baseColor = dominantColor?.let { Color(it) }
-    val onBase = baseColor?.let { if (it.luminance() > 0.5f) Color.Black else Color.White }
-    val closeColor = onBase ?: MaterialTheme.colorScheme.onSurface
-    val titleColor = onBase ?: MaterialTheme.colorScheme.onSurface
-    val currentHighlight = onBase?.copy(alpha = 0.16f) ?: MaterialTheme.colorScheme.surfaceVariant
-    val rowBackground = if (onBase != null) Color.Transparent else MaterialTheme.colorScheme.background
-    val currentTitle = onBase ?: MaterialTheme.colorScheme.primary
-    val defaultTitle = onBase?.copy(alpha = 0.92f) ?: MaterialTheme.colorScheme.onSurface
-    val artistColor = onBase?.copy(alpha = 0.7f) ?: MaterialTheme.colorScheme.onSurfaceVariant
-    val moreColor = onBase?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
+    val baseColor = Color(0xFF1A1A1D)
+    val onBase = Color.White
+    val closeColor = Color.White
+    val titleColor = Color.White
+    val currentHighlight = Color.White.copy(alpha = 0.10f)
+    val rowBackground = Color.Transparent
+    val currentTitle = Color.White
+    val defaultTitle = Color.White.copy(alpha = 0.92f)
+    val artistColor = Color(0xFFA1A1AA)
+    val moreColor = Color(0xFFA1A1AA)
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                if (baseColor != null) {
-                    Brush.verticalGradient(
-                        listOf(baseColor, baseColor.copy(alpha = 0.45f), Color.Black)
-                    )
-                } else {
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.surface,
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                }
-            )
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .background(baseColor)
             .padding(16.dp)
     ) {
         Row(
@@ -1017,7 +1007,7 @@ private fun QueueSheet(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn {
+        LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             itemsIndexed(queue, key = { _, song -> song.id }) { index, song ->
                 val isCurrent = index == currentIndex
                 var menuExpanded by remember { mutableStateOf(false) }
@@ -1032,7 +1022,7 @@ private fun QueueSheet(
                     if (isCurrent) {
                         NowPlayingIndicator(
                             isPlaying = isPlaying,
-                            color = onBase ?: MaterialTheme.colorScheme.primary,
+                            color = onBase,
                             modifier = Modifier.padding(end = 10.dp)
                         )
                     }
@@ -1040,7 +1030,7 @@ private fun QueueSheet(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(Dimens.RadiusSmall)
-                            .background(MaterialTheme.colorScheme.surface)
+                            .background(Color(0xFF2C2C30))
                     ) {
                         if (song.albumArtUri != null) {
                             Image(
