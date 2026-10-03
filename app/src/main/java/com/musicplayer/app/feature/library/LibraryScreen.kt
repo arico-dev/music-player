@@ -83,6 +83,7 @@ import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 enum class LibraryTab(val labelRes: Int) {
     SONGS(R.string.tab_songs),
@@ -433,7 +434,7 @@ private fun SongRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(song.id))
         ) {
             if (song.albumArtUri != null) {
                 AsyncImage(

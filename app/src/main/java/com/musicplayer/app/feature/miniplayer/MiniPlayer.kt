@@ -52,6 +52,7 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.player.PlaybackController
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -156,7 +157,7 @@ private fun MiniPlayerContent(
                         scaleY = artScale
                     }
                     .clip(Dimens.RadiusSmall)
-                    .background(MaterialTheme.colorScheme.surface)
+                    .background(coverGradient(song.id))
             ) {
                 if (song.albumArtUri != null) {
                     AsyncImage(

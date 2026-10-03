@@ -41,12 +41,14 @@ class MainActivity : ComponentActivity() {
             )
             val darkTheme = when (settings.themeMode) {
                 ThemeMode.LIGHT -> false
-                ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.DARK, ThemeMode.AMOLED -> true
             }
             MusicPlayerTheme(
                 darkTheme = darkTheme,
-                dynamicColor = settings.dynamicColor
+                amoled = settings.themeMode == ThemeMode.AMOLED,
+                seedArgb = settings.seedColorArgb,
+                paletteStyle = settings.paletteStyle
             ) {
                 MusicPlayerAppRoot()
             }

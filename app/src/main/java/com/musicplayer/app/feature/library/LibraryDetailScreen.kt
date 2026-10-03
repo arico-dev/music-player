@@ -49,6 +49,7 @@ import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.AlbumCard
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 @Composable
 fun LibraryDetailScreen(
@@ -215,6 +216,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
                 } else {
                     DetailArtwork(
                         artworkUri = header.artworkUri,
+                        gradientId = header.gradientId,
                         modifier = Modifier.size(180.dp)
                     )
                 }
@@ -248,6 +250,7 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
                 } else {
                     DetailArtwork(
                         artworkUri = header.artworkUri,
+                        gradientId = header.gradientId,
                         modifier = Modifier.fillMaxWidth(0.7f)
                     )
                 }
@@ -274,13 +277,14 @@ private fun DetailHeader(header: DetailHeader?, artistImageUrl: String?, isArtis
 @Composable
 private fun DetailArtwork(
     artworkUri: Uri?,
+    gradientId: Long = 0L,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .clip(Dimens.RadiusLarge)
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(coverGradient(gradientId))
     ) {
         if (artworkUri != null) {
             AsyncImage(
@@ -356,7 +360,7 @@ private fun DetailSongRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(song.id))
         ) {
             if (song.albumArtUri != null) {
                 AsyncImage(

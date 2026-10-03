@@ -56,6 +56,7 @@ import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
@@ -268,7 +269,7 @@ private fun PlaylistSongRow(
             modifier = Modifier
                 .size(40.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(song.id))
         ) {
             if (song.albumArtUri != null) {
                 AsyncImage(

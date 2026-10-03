@@ -22,7 +22,8 @@ import javax.inject.Inject
 data class DetailHeader(
     val name: String,
     val subtitle: String,
-    val artworkUri: Uri?
+    val artworkUri: Uri?,
+    val gradientId: Long = 0L
 )
 
 @HiltViewModel
@@ -71,7 +72,8 @@ class LibraryDetailViewModel @Inject constructor(
                 DetailHeader(
                     name = it.title,
                     subtitle = listOfNotNull(it.artist, it.year?.toString()).joinToString(" · "),
-                    artworkUri = it.albumArtUri
+                    artworkUri = it.albumArtUri,
+                    gradientId = it.id
                 )
             }
         }
@@ -80,7 +82,8 @@ class LibraryDetailViewModel @Inject constructor(
                 DetailHeader(
                     name = it.name,
                     subtitle = "${it.albumCount} álbumes · ${it.trackCount} canciones",
-                    artworkUri = null
+                    artworkUri = null,
+                    gradientId = it.id
                 )
             }
         }
@@ -89,7 +92,8 @@ class LibraryDetailViewModel @Inject constructor(
                 DetailHeader(
                     name = it.name,
                     subtitle = "${list.size} canciones",
-                    artworkUri = null
+                    artworkUri = null,
+                    gradientId = it.id
                 )
             }
         }
@@ -97,7 +101,8 @@ class LibraryDetailViewModel @Inject constructor(
             DetailHeader(
                 name = folderPath.substringAfterLast('/').ifEmpty { folderPath },
                 subtitle = "${list.size} canciones",
-                artworkUri = null
+                artworkUri = null,
+                gradientId = folderPath.hashCode().toLong()
             )
         }
         else -> MutableStateFlow(null)

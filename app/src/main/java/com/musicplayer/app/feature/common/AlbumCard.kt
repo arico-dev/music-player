@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.musicplayer.app.core.model.Album
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 @Composable
 fun AlbumCard(
@@ -39,7 +40,7 @@ fun AlbumCard(
                 .aspectRatio(1f)
                 .shadow(1.dp, Dimens.RadiusMedium)
                 .clip(Dimens.RadiusMedium)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(album.id))
         ) {
             if (album.albumArtUri != null) {
                 AsyncImage(
@@ -52,7 +53,7 @@ fun AlbumCard(
                 Icon(
                     imageVector = Icons.Filled.MusicNote,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     modifier = Modifier
                         .align(Alignment.Center)
                         .size(32.dp)

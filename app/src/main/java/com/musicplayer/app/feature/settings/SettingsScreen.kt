@@ -2,10 +2,14 @@ package com.musicplayer.app.feature.settings
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,11 +22,14 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHost
@@ -42,6 +49,8 @@ import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -52,9 +61,13 @@ import coil.compose.AsyncImage
 import com.musicplayer.app.BuildConfig
 import com.musicplayer.app.LocalBottomReserved
 import com.musicplayer.app.R
+import com.musicplayer.app.data.settings.PaletteStyle
 import com.musicplayer.app.data.settings.ThemeMode
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.SeedPreset
+import com.musicplayer.app.ui.theme.SeedPresets
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
@@ -102,32 +115,31 @@ fun SettingsScreen(
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(text = stringResource(R.string.settings_appearance), style = MaterialTheme.typography.titleMedium)
                 Text(text = stringResource(R.string.settings_appearance_desc), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ThemeChip(label = stringResource(R.string.settings_theme_system), selected = settings.themeMode == ThemeMode.SYSTEM, onClick = { viewModel.setThemeMode(ThemeMode.SYSTEM) })
                     ThemeChip(label = stringResource(R.string.settings_theme_light), selected = settings.themeMode == ThemeMode.LIGHT, onClick = { viewModel.setThemeMode(ThemeMode.LIGHT) })
                     ThemeChip(label = stringResource(R.string.settings_theme_dark), selected = settings.themeMode == ThemeMode.DARK, onClick = { viewModel.setThemeMode(ThemeMode.DARK) })
+                    ThemeChip(label = stringResource(R.string.settings_theme_amoled), selected = settings.themeMode == ThemeMode.AMOLED, onClick = { viewModel.setThemeMode(ThemeMode.AMOLED) })
                 }
                 HorizontalDivider()
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                        Text(text = stringResource(R.string.settings_dynamic_color), style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                stringResource(R.string.settings_dynamic_color_desc)
-                            else stringResource(R.string.settings_dynamic_color_unavailable),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                Text(text = stringResource(R.string.settings_seed_color), style = MaterialTheme.typography.bodyLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SeedPresets.forEach { preset ->
+                        val selected = settings.seedColorArgb == preset.color.value.toLong()
+                        SeedSwatch(
+                            preset = preset,
+                            selected = selected,
+                            onClick = { viewModel.setSeedColor(preset.color.value.toLong()) }
                         )
                     }
-                    Switch(
-                        checked = settings.dynamicColor,
-                        onCheckedChange = viewModel::setDynamicColor,
-                        enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-                    )
+                }
+                HorizontalDivider()
+                Text(text = stringResource(R.string.settings_palette_style), style = MaterialTheme.typography.bodyLarge)
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ThemeChip(label = stringResource(R.string.settings_palette_style_tonal), selected = settings.paletteStyle == PaletteStyle.TONAL, onClick = { viewModel.setPaletteStyle(PaletteStyle.TONAL) })
+                    ThemeChip(label = stringResource(R.string.settings_palette_style_expressive), selected = settings.paletteStyle == PaletteStyle.EXPRESSIVE, onClick = { viewModel.setPaletteStyle(PaletteStyle.EXPRESSIVE) })
+                    ThemeChip(label = stringResource(R.string.settings_palette_style_fruitsalad), selected = settings.paletteStyle == PaletteStyle.FRUITSALAD, onClick = { viewModel.setPaletteStyle(PaletteStyle.FRUITSALAD) })
+                    ThemeChip(label = stringResource(R.string.settings_palette_style_monsoon), selected = settings.paletteStyle == PaletteStyle.MONSOON, onClick = { viewModel.setPaletteStyle(PaletteStyle.MONSOON) })
                 }
             }
         }
@@ -290,4 +302,31 @@ fun SettingsScreen(
 @Composable
 private fun ThemeChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(selected = selected, onClick = onClick, label = { Text(label) })
+}
+
+@Composable
+private fun SeedSwatch(
+    preset: SeedPreset,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val tickColor = if (preset.color.luminance() > 0.45f) Color.Black else Color.White
+    val ring = MaterialTheme.colorScheme.onSurface
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(preset.color)
+            .border(
+                width = if (selected) 3.dp else 1.dp,
+                color = if (selected) ring else MaterialTheme.colorScheme.outlineVariant,
+                shape = CircleShape
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selected) {
+            Icon(imageVector = Icons.Filled.Check, contentDescription = stringResource(preset.nameRes), tint = tickColor)
+        }
+    }
 }

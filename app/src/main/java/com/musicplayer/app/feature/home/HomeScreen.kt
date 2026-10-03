@@ -54,6 +54,7 @@ import com.musicplayer.app.data.usage.UsageData
 import com.musicplayer.app.feature.common.AlbumCard
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 import java.time.LocalDateTime
 
 @Composable
@@ -345,6 +346,7 @@ private fun Artwork(song: Song, size: androidx.compose.ui.unit.Dp) {
         modifier = Modifier
             .size(size)
             .clip(Dimens.RadiusSmall)
+            .background(coverGradient(song.id))
     ) {
         if (song.albumArtUri != null) {
             AsyncImage(

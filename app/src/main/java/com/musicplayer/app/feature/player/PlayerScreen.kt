@@ -126,6 +126,7 @@ import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
 import com.musicplayer.app.ui.theme.FavoriteRed
 import com.musicplayer.app.ui.theme.TimerAmber
+import com.musicplayer.app.ui.theme.coverGradient
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -209,7 +210,8 @@ fun PlayerScreen(
 @Composable
 private fun AtmosphericBackground(
     artUri: String?,
-    backgroundColors: List<Color>
+    backgroundColors: List<Color>,
+    tint: Color
 ) {
     if (artUri != null) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -225,7 +227,13 @@ private fun AtmosphericBackground(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.45f))
+                    .background(
+                        Brush.verticalGradient(
+                            0f to tint.copy(alpha = 0.14f),
+                            0.35f to Color.Black.copy(alpha = 0.4f),
+                            1f to Color.Black.copy(alpha = 0.82f)
+                        )
+                    )
             )
         }
     } else {
@@ -275,7 +283,8 @@ private fun PlayerContent(
     ) {
         AtmosphericBackground(
             artUri = currentSong?.albumArtUri?.toString(),
-            backgroundColors = backgroundColors
+            backgroundColors = backgroundColors,
+            tint = baseColor
         )
         Text(
             text = stringResource(R.string.player_now_playing),
@@ -1027,7 +1036,7 @@ private fun QueueSheet(
                         modifier = Modifier
                             .size(44.dp)
                             .clip(Dimens.RadiusSmall)
-                            .background(Color(0xFF2C2C30))
+                            .background(coverGradient(song.id))
                     ) {
                         if (song.albumArtUri != null) {
                             Image(

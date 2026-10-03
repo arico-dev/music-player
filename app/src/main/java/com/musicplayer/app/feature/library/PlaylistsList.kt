@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.musicplayer.app.R
 import com.musicplayer.app.core.model.Playlist
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 @Composable
 fun PlaylistList(
@@ -209,12 +210,12 @@ private fun PlaylistRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(playlist.id))
         ) {
             Icon(
                 imageVector = Icons.Filled.LibraryMusic,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier
                     .align(Alignment.Center)
                     .size(24.dp)

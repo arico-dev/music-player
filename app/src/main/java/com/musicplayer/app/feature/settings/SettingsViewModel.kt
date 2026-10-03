@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.musicplayer.app.data.recents.RecentStore
 import com.musicplayer.app.data.repository.LibraryRepository
+import com.musicplayer.app.data.settings.PaletteStyle
 import com.musicplayer.app.data.settings.SettingsState
 import com.musicplayer.app.data.settings.SettingsStore
 import com.musicplayer.app.data.settings.ThemeMode
@@ -37,8 +38,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { SettingsStore.setThemeMode(context, mode) }
     }
 
-    fun setDynamicColor(enabled: Boolean) {
-        viewModelScope.launch { SettingsStore.setDynamicColor(context, enabled) }
+    fun setSeedColor(argb: Long) {
+        viewModelScope.launch { SettingsStore.setSeedColor(context, argb) }
+    }
+
+    fun setPaletteStyle(style: PaletteStyle) {
+        viewModelScope.launch { SettingsStore.setPaletteStyle(context, style) }
     }
 
     fun setKeepPlayingInBackground(enabled: Boolean) {

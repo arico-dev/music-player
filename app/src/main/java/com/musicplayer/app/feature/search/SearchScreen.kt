@@ -56,6 +56,7 @@ import com.musicplayer.app.core.model.Song
 import com.musicplayer.app.feature.common.NowPlayingIndicator
 import com.musicplayer.app.feature.common.SongInfoSheet
 import com.musicplayer.app.ui.theme.Dimens
+import com.musicplayer.app.ui.theme.coverGradient
 
 @Composable
 fun SearchScreen(
@@ -201,7 +202,7 @@ private fun SongRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(song.id))
         ) {
             if (song.albumArtUri != null) {
                 AsyncImage(
@@ -277,7 +278,7 @@ private fun AlbumRow(
             modifier = Modifier
                 .size(48.dp)
                 .clip(Dimens.RadiusSmall)
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(coverGradient(album.id))
         ) {
             if (album.albumArtUri != null) {
                 Image(
