@@ -269,13 +269,29 @@ private fun PlayerContent(
     onOpenQueue: () -> Unit,
     onOpenLyrics: () -> Unit
 ) {
+    // La oscuridad del fondo la decide AtmosphericBackground: con carátula pinta
+    // scrim negro (texto claro); sin carátula usa backgroundColors según el tema.
+    // onBase sigue esa misma decisión (artUri), no dominantColor (puede tardar
+    // o fallar la extracción del color).
+    val hasArt = currentSong?.albumArtUri != null
     val baseColor = dominantColor?.let { Color(it) } ?: MaterialTheme.colorScheme.surface
-    val onBase = if (dominantColor != null) Color.White else MaterialTheme.colorScheme.onSurface
-    val backgroundColors = if (dominantColor != null) {
-        val tint = baseColor.darken(0.45f)
-        listOf(tint, tint.copy(alpha = 0.55f), Color.Black)
+    val onBase = if (hasArt) Color.White else MaterialTheme.colorScheme.onSurface
+    val lightMode = MaterialTheme.colorScheme.background.luminance() >= 0.5f
+    // backgroundColors solo se usa cuando NO hay carátula: en claro, degradado de
+    // superficies (textos oscuros legibles de arriba a abajo); en oscuro, el
+    // degradado original hacia negro con textos claros.
+    val backgroundColors = if (lightMode) {
+        listOf(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surfaceContainerHigh,
+            MaterialTheme.colorScheme.surfaceContainerHighest
+        )
     } else {
-        listOf(baseColor, baseColor.copy(alpha = 0.55f), Color.Black)
+        listOf(
+            MaterialTheme.colorScheme.surface,
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.55f),
+            Color.Black
+        )
     }
 
     BoxWithConstraints(

@@ -8,9 +8,11 @@ import androidx.compose.ui.unit.sp
 import com.musicplayer.app.R
 
 /**
- * Nunito: fuente redonda y "cute" (inspirada en Chocola). Se empaqueta la variable
- * [Nunito[wght].ttf] declarada en res/font/nunito.xml para los pesos 200..800, así
- * que cada peso aplica la variación real (wght) en lugar de faux-bold.
+ * Nunito: fuente redonda y "cute" (inspirada en Chocola). Se empaquetan las
+ * instancias estáticas de Google Fonts (res/font/nunito.xml, pesos 200..800);
+ * no se usa la variable-font porque su instancia por defecto es wght=200 y, si
+ * el sistema no aplicaba la variación, TODO el texto salía ExtraLight (texto
+ * "gris"/fantasma — issue #2).
  */
 val NunitoFamily = FontFamily(
     Font(R.font.nunito, weight = FontWeight.ExtraLight),
