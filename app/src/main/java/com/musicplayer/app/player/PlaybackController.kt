@@ -84,6 +84,14 @@ class PlaybackController @Inject constructor(
     private var restoreStarted = false
     private var restoreDone = false
     private var queueAppliedToPlayer = false
+
+    /**
+     * Mientras se aplica una sesión guardada, Media3 dispara onMediaItemTransition
+     * con el índice 0 antes de colocar el item guardado. Sin este guardia se
+     * sobrescribiría la sesión (índice/posición) y "Seguir escuchando" arrancaría
+     * otra canción — o ninguna — al releerla.
+     */
+    private var applyingSession = false
     private val restoreActions = ArrayDeque<() -> Unit>()
 
     /** Milisegundos reproducidos pendientes de volcar a [UsageStore]. */
@@ -128,6 +136,7 @@ class PlaybackController @Inject constructor(
 
     /** Empuja el estado real del player hacia los StateFlows (llamado por el servicio). */
     fun onPlayerMediaItemTransition(index: Int) {
+        if (applyingSession) return
         _currentIndex.value = index
         _currentSong.value = songQueue.getOrNull(index)
         refreshWidget()
@@ -138,7 +147,7 @@ class PlaybackController @Inject constructor(
         _isPlaying.value = isPlaying
         Log.d(TAG, "isPlaying -> $isPlaying")
         refreshWidget()
-        if (!isPlaying) {
+        if (!isPlaying && !applyingSession) {
             persistSession(_currentIndex.value, currentPosition())
             flushPendingListening()
         }
@@ -149,6 +158,7 @@ class PlaybackController @Inject constructor(
         restoreStarted = false
         restoreDone = false
         queueAppliedToPlayer = false
+        applyingSession = false
         restoreActions.clear()
         persistSession(_currentIndex.value, readCurrentPosition())
         flushPendingListening()
@@ -275,6 +285,7 @@ class PlaybackController @Inject constructor(
     ) {
         songQueue = songs
         val safeIndex = index.coerceIn(0, songs.lastIndex)
+        applyingSession = true
         p.setMediaItems(songs.map { it.toMediaItem() }, safeIndex, positionMs)
         _currentIndex.value = safeIndex
         _currentSong.value = songs[safeIndex]
@@ -282,6 +293,9 @@ class PlaybackController @Inject constructor(
         queueAppliedToPlayer = true
         Log.d(TAG, "sesión aplicada: ${songs.size} canciones index=$safeIndex pos=$positionMs")
         refreshWidget()
+        // Los callbacks de Media3 por setMediaItems ya han llegado; a partir de aquí
+        // las transiciones reales sí deben persistirse normalmente.
+        mainHandler.post { applyingSession = false }
     }
 
     fun playSongs(songs: List<Song>, startIndex: Int = 0) {
@@ -312,7 +326,11 @@ class PlaybackController @Inject constructor(
             val restoredSongs = if (songQueue.map { it.id } == savedIds) {
                 songQueue
             } else {
-                songDao.getByIds(savedIds).map { it.toSong() }
+                // getByIds (WHERE id IN ...) no garantiza el orden de savedIds;
+                // reordenamos para que session.index apunte a la misma canción
+                // que muestra la tarjeta "Seguir escuchando".
+                val byId = songDao.getByIds(savedIds).associateBy { it.id }
+                savedIds.mapNotNull { byId[it] }.map { it.toSong() }
             }
             if (restoredSongs.isEmpty()) return@launch
             val targetId = restoredSongs.getOrNull(session.index)?.id

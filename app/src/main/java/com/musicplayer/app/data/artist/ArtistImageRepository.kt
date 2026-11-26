@@ -3,6 +3,11 @@ package com.musicplayer.app.data.artist
 import android.content.Context
 import android.util.LruCache
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,6 +17,18 @@ class ArtistImageRepository @Inject constructor(
     private val api: DeezerArtistApi
 ) {
     private val memCache = LruCache<Long, String>(30)
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    init {
+        // Calienta la caché en cuanto se crea el singleton (arranque de la app)
+        // para que las listas puedan mostrar la foto desde el primer frame.
+        scope.launch {
+            ArtistImageStore.flow(context).first().forEach { (id, url) -> memCache.put(id, url) }
+        }
+    }
+
+    /** Lectura síncrona: evita el frame con la letra placeholder al reentrar. */
+    fun cachedUrl(artistId: Long): String? = memCache.get(artistId)
 
     suspend fun imageUrl(artistId: Long, artistName: String): String? {
         memCache.get(artistId)?.let { return it }

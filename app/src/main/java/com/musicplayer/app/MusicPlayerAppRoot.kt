@@ -54,6 +54,7 @@ import com.musicplayer.app.feature.home.HomeScreen
 import com.musicplayer.app.feature.library.LibraryDetailScreen
 import com.musicplayer.app.feature.library.LibraryScreen
 import com.musicplayer.app.feature.library.PlaylistDetailScreen
+import com.musicplayer.app.feature.miniplayer.IdleMiniPlayer
 import com.musicplayer.app.feature.miniplayer.MiniPlayer
 import com.musicplayer.app.feature.player.PlayerScreen
 import com.musicplayer.app.feature.search.SearchScreen
@@ -134,6 +135,19 @@ fun MusicPlayerAppRoot() {
                 BarSlotDp.roundToPx() +
                 WindowInsets.navigationBars.getBottom(this)
             ).toDp()
+    }
+
+    // Misma política para la barra inferior y el mini-player inactivo: si se
+    // navega a un tab con un navigate() plano se apila una entrada que después
+    // launchSingleTop no sabe sacar y "Inicio" deja de responder.
+    fun navigateToTab(route: String) {
+        navController.navigate(route) {
+            popUpTo(navController.graph.findStartDestination().id) {
+                saveState = true
+            }
+            launchSingleTop = true
+            restoreState = true
+        }
     }
 
     CompositionLocalProvider(
@@ -278,6 +292,11 @@ fun MusicPlayerAppRoot() {
                                 onClick = { navController.navigate(Routes.PLAYER) },
                                 modifier = Modifier.fillMaxSize()
                             )
+                        } else {
+                            IdleMiniPlayer(
+                                onClick = { navigateToTab(Routes.LIBRARY) },
+                                modifier = Modifier.fillMaxSize()
+                            )
                         }
                     }
                     Box(
@@ -287,15 +306,7 @@ fun MusicPlayerAppRoot() {
                     ) {
                         BottomBar(
                             currentRoute = currentRoute,
-                            onSelect = { route ->
-                                navController.navigate(route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
+                            onSelect = { route -> navigateToTab(route) },
                             modifier = Modifier.fillMaxSize()
                         )
                     }

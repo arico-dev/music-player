@@ -2,13 +2,17 @@ package com.musicplayer.app.ui.theme
 
 import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import com.musicplayer.app.R
 
 /**
  * Colores semilla "cute" disponibles en Ajustes → Apariencia.
  * Cualquier color ARGB es válido como semilla; estos son los presets.
  */
-data class SeedPreset(@StringRes val nameRes: Int, val color: Color)
+data class SeedPreset(@StringRes val nameRes: Int, val color: Color) {
+    /** ARGB de 32 bits tal como lo espera `Color(Long)` / DataStore. */
+    val argb: Long get() = color.toArgb().toLong() and 0xFFFFFFFFL
+}
 
 val SeedPresets = listOf(
     SeedPreset(R.string.settings_seed_rosa, Color(0xFFFF5597)),

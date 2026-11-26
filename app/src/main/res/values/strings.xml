@@ -44,6 +44,8 @@
     <string name="home_now_playing_pause">Pausar reproducción</string>
     <string name="home_recents">Escuchados recientemente</string>
     <string name="home_recents_empty">Todavía no has reproducido nada.\nVe a Biblioteca, elige una canción y vuelve aquí.</string>
+    <string name="mini_idle_title">Nada en reproducción</string>
+    <string name="mini_idle_subtitle">Elige una canción en tu biblioteca</string>
 
     <!-- Library tabs -->
     <string name="tab_songs">Canciones</string>

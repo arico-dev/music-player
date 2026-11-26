@@ -125,11 +125,11 @@ fun SettingsScreen(
                 Text(text = stringResource(R.string.settings_seed_color), style = MaterialTheme.typography.bodyLarge)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SeedPresets.forEach { preset ->
-                        val selected = settings.seedColorArgb == preset.color.value.toLong()
+                        val selected = settings.seedColorArgb == preset.argb
                         SeedSwatch(
                             preset = preset,
                             selected = selected,
-                            onClick = { viewModel.setSeedColor(preset.color.value.toLong()) }
+                            onClick = { viewModel.setSeedColor(preset.argb) }
                         )
                     }
                 }

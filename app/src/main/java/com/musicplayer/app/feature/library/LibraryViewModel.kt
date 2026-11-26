@@ -148,6 +148,8 @@ class LibraryViewModel @Inject constructor(
         _songInfo.value = null
     }
 
+    fun cachedArtistImageUrl(artist: Artist): String? = artistImageRepository.cachedUrl(artist.id)
+
     suspend fun getArtistImageUrl(artist: Artist): String? =
         withContext(Dispatchers.IO) { artistImageRepository.imageUrl(artist.id, artist.name) }
 

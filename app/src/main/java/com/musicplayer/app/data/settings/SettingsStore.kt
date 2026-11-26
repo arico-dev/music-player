@@ -36,7 +36,11 @@ object SettingsStore {
         context.settingsDataStore.data.map { prefs ->
             val rawTheme = prefs[KEY_THEME] ?: ThemeMode.SYSTEM.name
             val mode = runCatching { ThemeMode.valueOf(rawTheme) }.getOrDefault(ThemeMode.SYSTEM)
-            val seed = prefs[KEY_SEED] ?: DEFAULT_SEED_ARGB
+            val rawSeed = prefs[KEY_SEED] ?: DEFAULT_SEED_ARGB
+            // v1.6.3/1.6.4 guardaban Color.value.toLong() (64 bits empaquetados).
+            // Color(Long) espera ARGB de 32 bits: sin normalizar, la semilla
+            // quedaba en negro y el tema se volvía gris. Migración transparente.
+            val seed = if (rawSeed ushr 32 != 0L) (rawSeed ushr 32) and 0xFFFFFFFFL else rawSeed and 0xFFFFFFFFL
             val rawStyle = prefs[KEY_PALETTE_STYLE] ?: PaletteStyle.EXPRESSIVE.name
             val style = runCatching { PaletteStyle.valueOf(rawStyle) }.getOrDefault(PaletteStyle.EXPRESSIVE)
             val keepPlaying = prefs[KEY_KEEP_PLAYING] ?: false

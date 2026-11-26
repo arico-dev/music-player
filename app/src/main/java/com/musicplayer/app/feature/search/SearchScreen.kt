@@ -323,7 +323,10 @@ private fun ArtistRow(
     onClick: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel()
 ) {
-    val imageUrl by produceState<String?>(initialValue = null, artist.id) {
+    val imageUrl by produceState<String?>(
+        initialValue = viewModel.cachedArtistImageUrl(artist),
+        artist.id
+    ) {
         value = viewModel.getArtistImageUrl(artist)
     }
     Row(

@@ -241,7 +241,10 @@ private fun LibraryTabs(
                 Tab(
                     selected = selectedTab == tab,
                     onClick = { onSelectTab(tab) },
-                    selectedContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    // El TabRow es transparente: el texto va sobre background,
+                    // no sobre secondaryContainer. onSecondaryContainer puede
+                    // resolverse negro y desaparecer sobre fondos oscuros/AMOLED.
+                    selectedContentColor = MaterialTheme.colorScheme.primary,
                     unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     text = {
                         Text(
@@ -575,7 +578,10 @@ private fun ArtistRow(
     onClick: () -> Unit,
     viewModel: LibraryViewModel = hiltViewModel()
 ) {
-    val imageUrl by produceState<String?>(initialValue = null, artist.id) {
+    val imageUrl by produceState<String?>(
+        initialValue = viewModel.cachedArtistImageUrl(artist),
+        artist.id
+    ) {
         value = viewModel.getArtistImageUrl(artist)
     }
     Row(

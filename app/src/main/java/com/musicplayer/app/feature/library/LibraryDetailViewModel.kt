@@ -108,7 +108,9 @@ class LibraryDetailViewModel @Inject constructor(
         else -> MutableStateFlow(null)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val _artistImageUrl = MutableStateFlow<String?>(null)
+    private val _artistImageUrl = MutableStateFlow(
+        artistId?.let { artistImageRepository.cachedUrl(it) }
+    )
     val artistImageUrl: StateFlow<String?> = _artistImageUrl
 
     init {
